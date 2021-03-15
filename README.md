@@ -7,4 +7,5 @@ Requirements
 * Bleak
 
 References
-* [PM5 BLE Services][https://www.concept2.co.uk/files/pdf/us/monitors/PM5_BluetoothSmartInterfaceDefinition.pdf]
+* [Bleak Github](https://github.com/hbldh/bleak)
+* [PM5 BLE Services](https://www.concept2.co.uk/files/pdf/us/monitors/PM5_BluetoothSmartInterfaceDefinition.pdf)    
