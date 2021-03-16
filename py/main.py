@@ -48,18 +48,6 @@ def decodeRowingStatus1(val):
     print(stats)
     
 
-async def discoverRower():
-    global charDecoderByHandle
-    devices = await discover()
-    for device in devices:
-        if 'PM5' in device.name:
-            async with BleakClient(device) as client:
-                charDecoderByHandle[client.services.get_characteristic(uuid.UUID('{ce060031-43e5-11e4-916c-0800200c9a66}')).handle] = decodeRowingStatus
-                charDecoderByHandle[client.services.get_characteristic(uuid.UUID('{ce060032-43e5-11e4-916c-0800200c9a66}')).handle] = decodeRowingStatus1
-            return device
-    return None
-
-
 def charUpdate(charHandle, data):
     if charHandle in charDecoderByHandle:
         charDecoderByHandle[charHandle](data)
@@ -67,47 +55,92 @@ def charUpdate(charHandle, data):
     print(charHandle);
     print("Update from unknown characteristic" + str(charHandle))
 
+
+ble = {'sendCSAFE'  : uuid.UUID('{ce060021-43e5-11e4-916c-0800200c9a66}'),
+       'getCSAFE'   : uuid.UUID('{ce060022-43e5-11e4-916c-0800200c9a66}'),
+       'RowStatus'  : uuid.UUID('{ce060031-43e5-11e4-916c-0800200c9a66}'),
+       'RowStatus1' : uuid.UUID('{ce060032-43e5-11e4-916c-0800200c9a66}')}
+
+
+def frameCSAFE(cmdBytes):
+    frame = [0xF1]
+    for b in cmdBytes:
+        if 0xF0 <= b and b <= 0xF3:
+            frame.append(0xF3)
+            frame.append(b - 0xF0)
+        else:
+            frame.append(b)
+    csum = 0x00
+    for i in range(1, len(frame)):
+        csum = csum ^ frame[i]
+    frame.append(csum)
+    frame.append(0xF2)
+    print("CSAFE CMD: [" + ", ".join(hex(n) for n in frame) + "]")
+    return frame
+
+
+def unframeCSAFE(rspBytes):
+    print("CSAFE RSP: [" + ", ".join(hex(n) for n in rspBytes) + "]")
+    if rspBytes[0] != 0xF1:
+        return None
+    rsp = [rspBytes[1]]   # Status
+    i = 2;
+    while i < len(rspBytes)-2:
+        cmd = [rspBytes[i], []]
+        i = i + 1
+        rspLen = rspBytes[i]
+        i = i + 1
+        for j in range(rspLen):
+            datum = rspBytes[i]
+            i = i + 1
+            if datum == 0xF3:
+                datum = rspBytes[i] + 0xF0
+                i = i + 1
+            cmd[1].append(datum)
+        rsp.append(cmd)
+    print(rsp)
+    return rsp
+
     
-async def init(rower):
-    async with BleakClient(rower) as client:
-        print("Connected to rower...")
-        for charHandle in charDecoderByHandle.keys():
-            val = await client.read_gatt_char(charHandle)
-            charDecoderByHandle[charHandle](val)
+async def runRower():
+    global charDecoderByHandle
+    devices = await discover()
+    for device in devices:
+        if 'PM5' in device.name:
+            async with BleakClient(device) as client:
+                val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
+                print("Connected to PM5 Serial no " + val.decode())
 
-            """
-        val = await client.read_gatt_char(uuid.UUID('{00002902-0000-1000-8000-00805f9b34fb}'))
-        print(binascii.hexlify(val))
-        await client.write_gatt_char(uuid.UUID('{00002902-0000-1000-8000-00805f9b34fb}'), bytes([0x01, 0x00]))
-        val = await client.read_gatt_char(uuid.UUID('{00002902-0000-1000-8000-00805f9b34fb}'))
-        print(binascii.hexlify(val))
-            """
-            
-        for charHandle in charDecoderByHandle.keys():
-            val = await client.start_notify(charHandle, charUpdate)
+                await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x94]), True)
+                rsp = unframeCSAFE(await client.read_gatt_char(ble['getCSAFE']))
+                
+                charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
+                charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
+
+                for charHandle in charDecoderByHandle.keys():
+                    val = await client.read_gatt_char(charHandle)
+                    charDecoderByHandle[charHandle](val)
+
+                for charHandle in charDecoderByHandle.keys():
+                    val = await client.start_notify(charHandle, charUpdate)
+
+                print("Running...");
+                await asyncio.sleep(10.0)
+
+                print("Disconnecting from rower...")
+                for charHandle in charDecoderByHandle.keys():
+                    val = await client.stop_notify(charHandle)
+
+                return device
+
+    return None
 
 
-async def run():
-    print("Running...");
-    await asyncio.sleep(10.0)
-
-
-async def shutdown(rower):
-    print("Disconnecting from rower...")
-    async with BleakClient(rower) as client:
-        for charHandle in charDecoderByHandle.keys():
-            val = await client.stop_notify(charHandle)
-
-import sys
-
-            
 loop = asyncio.get_event_loop()
-rower = loop.run_until_complete(discoverRower())
+
+rower = loop.run_until_complete(runRower())
 if rower is None:
-    print("ERROR: Rower not found")
-    exit
-loop.run_until_complete(init(rower))
-loop.run_until_complete(run())
-loop.run_until_complete(shutdown(rower))
+    print("No PM5 rower found.")
+    exit(1)
 
 print("Done.")
