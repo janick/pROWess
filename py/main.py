@@ -70,10 +70,11 @@ def charUpdate(charHandle, data):
     print("ERROR: Update from unknown characteristic" + str(charHandle))
 
 
-ble = {'sendCSAFE'  : uuid.UUID('{ce060021-43e5-11e4-916c-0800200c9a66}'),
-       'getCSAFE'   : uuid.UUID('{ce060022-43e5-11e4-916c-0800200c9a66}'),
-       'RowStatus'  : uuid.UUID('{ce060031-43e5-11e4-916c-0800200c9a66}'),
-       'RowStatus1' : uuid.UUID('{ce060032-43e5-11e4-916c-0800200c9a66}')}
+PM5UUID = {'getSerial'  : uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'),
+           'sendCSAFE'  : uuid.UUID('{ce060021-43e5-11e4-916c-0800200c9a66}'),
+           'getCSAFE'   : uuid.UUID('{ce060022-43e5-11e4-916c-0800200c9a66}'),
+           'RowStatus'  : uuid.UUID('{ce060031-43e5-11e4-916c-0800200c9a66}'),
+           'RowStatus1' : uuid.UUID('{ce060032-43e5-11e4-916c-0800200c9a66}')}
 
 
 #
@@ -143,19 +144,19 @@ async def findRower():
 
 async def runRower(rower):
     async with BleakClient(rower) as client:
-        val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
+        val = await client.read_gatt_char(PM5UUID['getSerial'])
         print("Connected to PM5 Serial no " + val.decode())
 
-        charDecoderByHandle[client.services.get_characteristic(ble['getCSAFE'  ]).handle] = decodeCSAFE
-        charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
-        charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
+        charDecoderByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
+        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus' ]).handle] = decodeRowingStatus
+        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = decodeRowingStatus1
         
         for charHandle in charDecoderByHandle.keys():
             await client.start_notify(charHandle, charUpdate)
             
         print("Running...");
-        # Get the status and serial No via CSAFE
-        await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x94]), True)
+        # Get the serial No via CSAFE
+        # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
         await asyncio.sleep(3.0)
 
         print("Disconnecting from rower...")
