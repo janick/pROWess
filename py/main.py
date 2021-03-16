@@ -13,6 +13,18 @@ from bleak import BleakClient
 from bleak import _logger as bleakLogger
 
 
+def decodeCSAFE(val):
+    rsp = unframeCSAFE(val)
+    if len(rsp) < 2:
+        return
+    
+    if rsp[1][0] == 0x94:
+        print("Serial No: " + "".join(chr(n) for n in rsp[1][1]))
+        return
+    
+    print("CSAFE RSP: ", rsp)
+
+    
 def decodeRowingStatus(val):
     global stats
     
@@ -107,6 +119,8 @@ def unframeCSAFE(rspBytes):
         rspLen = rspBytes[i]
         i = i + 1
         for j in range(rspLen):
+            if i >= len(rspBytes)-1:
+                return rsp
             datum = rspBytes[i]
             i = i + 1
             if datum == 0xF3:
@@ -132,12 +146,7 @@ async def runRower(rower):
         val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
         print("Connected to PM5 Serial no " + val.decode())
 
-        # Get the status and serial No via CSAFE
-        await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x80,0x94]), True)
-        rsp = unframeCSAFE(await client.read_gatt_char(ble['getCSAFE']))
-        # Wut?
-        print(rsp)
-        
+        charDecoderByHandle[client.services.get_characteristic(ble['getCSAFE'  ]).handle] = decodeCSAFE
         charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
         charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
         
@@ -145,7 +154,11 @@ async def runRower(rower):
             val = await client.start_notify(charHandle, charUpdate)
             
         print("Running...");
+
+        # Get the status and serial No via CSAFE
+        await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x94]), True)
         await asyncio.sleep(3.0)
+        
 
         print("Disconnecting from rower...")
         for charHandle in charDecoderByHandle.keys():
