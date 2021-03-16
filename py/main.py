@@ -151,14 +151,12 @@ async def runRower(rower):
         charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
         
         for charHandle in charDecoderByHandle.keys():
-            val = await client.start_notify(charHandle, charUpdate)
+            await client.start_notify(charHandle, charUpdate)
             
         print("Running...");
-
         # Get the status and serial No via CSAFE
         await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x94]), True)
         await asyncio.sleep(3.0)
-        
 
         print("Disconnecting from rower...")
         for charHandle in charDecoderByHandle.keys():
