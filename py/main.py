@@ -12,6 +12,7 @@ from bleak import discover
 from bleak import BleakClient
 from bleak import _logger as bleakLogger
 
+
 def decodeRowingStatus(val):
     global stats
     
@@ -30,6 +31,7 @@ def decodeRowingStatus(val):
     stats['DragFactor']    = vals[14]
     
     print(stats)
+
     
 def decodeRowingStatus1(val):
     global stats
@@ -53,7 +55,7 @@ def charUpdate(charHandle, data):
         charDecoderByHandle[charHandle](data)
         return
     print(charHandle);
-    print("Update from unknown characteristic" + str(charHandle))
+    print("ERROR: Update from unknown characteristic" + str(charHandle))
 
 
 ble = {'sendCSAFE'  : uuid.UUID('{ce060021-43e5-11e4-916c-0800200c9a66}'),
@@ -62,6 +64,10 @@ ble = {'sendCSAFE'  : uuid.UUID('{ce060021-43e5-11e4-916c-0800200c9a66}'),
        'RowStatus1' : uuid.UUID('{ce060032-43e5-11e4-916c-0800200c9a66}')}
 
 
+#
+# Frame a CSAFE command string, adding start, checksum, and stop code
+# as well as escaping control bytes
+#
 def frameCSAFE(cmdBytes):
     frame = [0xF1]
     for b in cmdBytes:
@@ -75,12 +81,22 @@ def frameCSAFE(cmdBytes):
         csum = csum ^ frame[i]
     frame.append(csum)
     frame.append(0xF2)
-    print("CSAFE CMD: [" + ", ".join(hex(n) for n in frame) + "]")
+    # print("CSAFE CMD: [" + ", ".join(hex(n) for n in frame) + "]")
     return frame
 
 
+#
+# Parse a CSAFE response frame into an array of per-command response
+# First array element is the status, then all subsequent array element
+# are two-elements arrays with the command code and the response string for that command
+# e.g.
+#      [status,
+#       [cmdId, [rsp ... rsp ]],
+#       ...
+#       [cmdId, [rsp ... rsp ]]]
+#
 def unframeCSAFE(rspBytes):
-    print("CSAFE RSP: [" + ", ".join(hex(n) for n in rspBytes) + "]")
+    # print("CSAFE RSP: [" + ", ".join(hex(n) for n in rspBytes) + "]")
     if rspBytes[0] != 0xF1:
         return None
     rsp = [rspBytes[1]]   # Status
@@ -98,7 +114,7 @@ def unframeCSAFE(rspBytes):
                 i = i + 1
             cmd[1].append(datum)
         rsp.append(cmd)
-    print(rsp)
+
     return rsp
 
     
@@ -111,21 +127,20 @@ async def runRower():
                 val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
                 print("Connected to PM5 Serial no " + val.decode())
 
-                await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x94]), True)
+                # Get the status and serial No via CSAFE
+                await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x80,0x94]), True)
                 rsp = unframeCSAFE(await client.read_gatt_char(ble['getCSAFE']))
+                # Wut?
+                print(rsp)
                 
                 charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
                 charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
 
                 for charHandle in charDecoderByHandle.keys():
-                    val = await client.read_gatt_char(charHandle)
-                    charDecoderByHandle[charHandle](val)
-
-                for charHandle in charDecoderByHandle.keys():
                     val = await client.start_notify(charHandle, charUpdate)
 
                 print("Running...");
-                await asyncio.sleep(10.0)
+                await asyncio.sleep(3.0)
 
                 print("Disconnecting from rower...")
                 for charHandle in charDecoderByHandle.keys():
