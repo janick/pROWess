@@ -118,44 +118,46 @@ def unframeCSAFE(rspBytes):
     return rsp
 
     
-async def runRower():
+async def findRower():
     global charDecoderByHandle
     devices = await discover()
     for device in devices:
         if 'PM5' in device.name:
-            async with BleakClient(device) as client:
-                val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
-                print("Connected to PM5 Serial no " + val.decode())
-
-                # Get the status and serial No via CSAFE
-                await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x80,0x94]), True)
-                rsp = unframeCSAFE(await client.read_gatt_char(ble['getCSAFE']))
-                # Wut?
-                print(rsp)
-                
-                charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
-                charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
-
-                for charHandle in charDecoderByHandle.keys():
-                    val = await client.start_notify(charHandle, charUpdate)
-
-                print("Running...");
-                await asyncio.sleep(3.0)
-
-                print("Disconnecting from rower...")
-                for charHandle in charDecoderByHandle.keys():
-                    val = await client.stop_notify(charHandle)
-
-                return device
-
+            return device
     return None
 
 
+async def runRower(rower):
+    async with BleakClient(rower) as client:
+        val = await client.read_gatt_char(uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'))
+        print("Connected to PM5 Serial no " + val.decode())
+
+        # Get the status and serial No via CSAFE
+        await client.write_gatt_char(ble['sendCSAFE'], frameCSAFE([0x80,0x94]), True)
+        rsp = unframeCSAFE(await client.read_gatt_char(ble['getCSAFE']))
+        # Wut?
+        print(rsp)
+        
+        charDecoderByHandle[client.services.get_characteristic(ble['RowStatus' ]).handle] = decodeRowingStatus
+        charDecoderByHandle[client.services.get_characteristic(ble['RowStatus1']).handle] = decodeRowingStatus1
+        
+        for charHandle in charDecoderByHandle.keys():
+            val = await client.start_notify(charHandle, charUpdate)
+            
+        print("Running...");
+        await asyncio.sleep(3.0)
+
+        print("Disconnecting from rower...")
+        for charHandle in charDecoderByHandle.keys():
+            val = await client.stop_notify(charHandle)
+
+            
 loop = asyncio.get_event_loop()
 
-rower = loop.run_until_complete(runRower())
+rower = loop.run_until_complete(findRower())
 if rower is None:
     print("No PM5 rower found.")
     exit(1)
 
+loop.run_until_complete(runRower(rower))
 print("Done.")
