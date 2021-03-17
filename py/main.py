@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import asyncio
 import logging
@@ -21,7 +22,7 @@ import struct
 import uuid
 
 charDecoderByHandle = {}
-stats       = {}
+stats               = {}
 
 from bleak import discover
 from bleak import BleakClient
@@ -172,7 +173,7 @@ async def runRower(rower):
         print("Running...");
         # Get the serial No via CSAFE
         # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        await asyncio.sleep(3.0)
+        await asyncio.sleep(60.0)
 
         print("Disconnecting from rower...")
         for charHandle in charDecoderByHandle.keys():

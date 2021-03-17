@@ -77,6 +77,7 @@ The async patterns must be strictly followed.
 ### Requirements
 * Python 3.6 or later (required by Bleak)
 * Bleak
+* aiotkinter
 
 ### References
 * [Bleak Github](https://github.com/hbldh/bleak)
