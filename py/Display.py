@@ -17,17 +17,68 @@
 import tkinter as tk
 
 
-class Display(tk.Tk):
+#
+# Frame with a set of widgets that displays the main workout numbers
+#
+class NumbersFrame(tk.Frame):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, kwargs)
+
+        self.WorkoutTime = tk.Label(master=self, text=" 03:10 ", font=('Arial', 40))
+        self.StrokeRate  = tk.Label(master=self, text="25", font=('Arial bold', 50))
+        self.SplitTime   = tk.Label(master=self, text=" 2:30 ", font=('Arial bold', 50))
+        self.Distance    = tk.Label(master=self, text=" 1000 m ", font=('Arial', 40))
+        self.HeartRate   = tk.Label(master=self, text="134", font=('Arial bold', 60), fg='red')
+
+        tk.Label(master=self, text="Left:", anchor="e", font=('Arial', 25)).grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.WorkoutTime.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.StrokeRate.grid( row=0, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
+        tk.Label(master=self, text="s/m", anchor="w", font=('Arial', 20)).grid(row=0, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
+        tk.Label(master=self, text="Split:", anchor="e", font=('Arial', 25)).grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.SplitTime.grid(  row=1, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        tk.Label(master=self, text="/500 m", anchor="w", font=('Arial', 25)).grid(row=1, column=2, columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
+        tk.Label(master=self, text="Dist:", anchor="e", font=('Arial', 25)).grid(row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.Distance.grid(   row=2, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.HeartRate.grid(  row=2, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
+        tk.Label(master=self, text="♥", anchor="w", font=('Arial bold', 60), fg='red').grid(row=2, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
+
+
+class MainDisplay(tk.Tk):
 
     def __init__(self, height, width):
         super().__init__()
-        self.topHalfFrame    = tk.Frame(master=self, relief=tk.RIDGE, height=height*2/3, width=width, borderwidth=5)
-        self.bottomHalfFrame = tk.Frame(master=self, relief=tk.RIDGE, height=height*1/3, width=width, borderwidth=5)
+        geo = str(width) + "x" + str(height)
+        self.geometry(geo)
 
-        self.topHalfFrame.pack()
-        self.bottomHalfFrame.pack()
+        # Main Layout
+        self.winfo_toplevel().title("pROWess")
+        topHalfFrame    = tk.Frame(master=self, relief=tk.RIDGE, borderwidth=5, height=int(height*2/3))
+        bottomHalfFrame = tk.Frame(master=self, relief=tk.RIDGE, borderwidth=5, height=int(height*1/3))
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+        topHalfFrame.grid(   row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomHalfFrame.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.update()
+
+        # Bottom half layout
+        bottomLeftFrame   = tk.Frame(master=bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
+        bottomMiddleFrame = tk.Frame(master=bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
+        bottomRightFrame  = NumbersFrame(bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
+        bottomHalfFrame.rowconfigure(0, weight=1)
+        bottomHalfFrame.columnconfigure(0, weight=1)
+        bottomHalfFrame.columnconfigure(1, weight=1)
+        bottomLeftFrame.grid(  row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomMiddleFrame.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomRightFrame.grid( row=0, column=2, sticky=tk.N+tk.S)
+        self.update()
+
+        # Keep reference to the frames we need to update
+        self.Numbers = bottomRightFrame
 
 
-window = Display(800, 1400)
+#
+# Test the display layout
+#
+window = MainDisplay(800, 1400)
 window.mainloop()
 
