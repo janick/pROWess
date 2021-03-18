@@ -25,11 +25,11 @@ class NumbersFrame(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, kwargs)
 
-        self.WorkoutTime = tk.Label(master=self, text=" 3:10", font=('Arial', 40), width=7)
-        self.StrokeRate  = tk.Label(master=self, text="25", font=('Arial bold', 50), width=3)
-        self.SplitTime   = tk.Label(master=self, text=" 2:30 ", font=('Arial bold', 50), width=7)
-        self.Distance    = tk.Label(master=self, text="1000 m", font=('Arial', 40), width=7)
-        self.HeartRate   = tk.Label(master=self, text="134", font=('Arial bold', 60), fg='red', width=3)
+        self.WorkoutTime = tk.Label(master=self, text="--:--", font=('Arial', 40), width=7)
+        self.StrokeRate  = tk.Label(master=self, text="--", font=('Arial bold', 50), width=3)
+        self.SplitTime   = tk.Label(master=self, text=" -:--", font=('Arial bold', 50), width=7)
+        self.Distance    = tk.Label(master=self, text="---- m", font=('Arial', 40), width=7)
+        self.HeartRate   = tk.Label(master=self, text="---", font=('Arial bold', 60), fg='red', width=3)
 
         tk.Label(master=self, text="Left:", anchor="e", font=('Arial', 25), width=6).grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.WorkoutTime.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -41,7 +41,8 @@ class NumbersFrame(tk.Frame):
         tk.Label(master=self, text="Dist:", anchor="e", font=('Arial', 25)).grid(row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.Distance.grid(   row=2, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.HeartRate.grid(  row=2, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
-        tk.Label(master=self, text="♥", anchor="w", font=('Arial bold', 60), fg='red').grid(row=2, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.Heart = tk.Label(master=self, text="♥", anchor="w", font=('Arial bold', 60), fg='red')
+        self.Heart.grid(row=2, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
 
 
 class MainDisplay(tk.Tk):
@@ -78,6 +79,7 @@ class MainDisplay(tk.Tk):
         self.startTime = None
         self.lastTime  = None
         self.distance  = 0
+        self.heartBeatState = False
 
     #
     # Start/stop workout display
@@ -85,6 +87,14 @@ class MainDisplay(tk.Tk):
     def startWorkout(self):
         self.startTime = int(time.time())
         self.lastTime = self.startTime
+
+
+    def heartBeat(self):
+        self.heartBeatState = not self.heartBeatState
+        color = 'red'
+        if self.heartBeatState:
+            color = 'black'
+        self.Numbers.Heart.configure(fg=color)
 
 
     def stopWorkout(self):
@@ -138,15 +148,22 @@ def test():
         return
 
     window.updateStrokeRate(data[0][0])
-    window.updateSpeed(data[0][1]/100)
+    window.updateSpeed(data[0][1]/1000)
     window.updateHeartBeat(data[0][2])
 
     data.pop(0)
     window.after(1000, test)
 
 
+def beat():
+    global window
+    window.heartBeat()
+    window.after(500, beat)
+
+
 window = MainDisplay(800, 1400)
 window.startWorkout()
 window.after(1000, test)
+window.after(1000, beat)
 window.mainloop()
 
