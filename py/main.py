@@ -19,7 +19,13 @@ import logging
 import binascii
 import platform
 import struct
+import time
 import uuid
+
+import Display
+
+import aiotkinter
+
 
 charDecoderByHandle = {}
 stats               = {}
@@ -173,19 +179,28 @@ async def runRower(rower):
         print("Running...");
         # Get the serial No via CSAFE
         # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        await asyncio.sleep(60.0)
+        await asyncio.sleep(10.0)
 
         print("Disconnecting from rower...")
         for charHandle in charDecoderByHandle.keys():
             val = await client.stop_notify(charHandle)
 
-            
+
+window = Display.MainDisplay(800, 1400)
+window.update()
+
+asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
 loop = asyncio.get_event_loop()
 
 rower = loop.run_until_complete(findRower())
 if rower is None:
-    print("No PM5 rower found.")
+    window.updateStatus(text="No PM5 rower found", fg='red')
+    time.sleep(5)
     exit(1)
 
+window.updateStatus(text="Start rowing!")
+
 loop.run_until_complete(runRower(rower))
-print("Done.")
+
+window.stopWorkout()
+time.sleep(5)

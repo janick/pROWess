@@ -30,6 +30,8 @@ class NumbersFrame(tk.Frame):
         self.SplitTime   = tk.Label(master=self, text=" -:--", font=('Arial bold', 50), width=7)
         self.Distance    = tk.Label(master=self, text="---- m", font=('Arial', 40), width=7)
         self.HeartRate   = tk.Label(master=self, text="---", font=('Arial bold', 60), fg='red', width=3)
+        self.Status      = tk.Label(master=self, text="Disconnected", font=('Arial', 20))
+
 
         tk.Label(master=self, text="Left:", anchor="e", font=('Arial', 25), width=6).grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.WorkoutTime.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -43,6 +45,7 @@ class NumbersFrame(tk.Frame):
         self.HeartRate.grid(  row=2, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
         self.Heart = tk.Label(master=self, text="♥", anchor="w", font=('Arial bold', 60), fg='red')
         self.Heart.grid(row=2, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.Status.grid(row=3, column=0, columnspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
 
 
 class MainDisplay(tk.Tk):
@@ -87,6 +90,7 @@ class MainDisplay(tk.Tk):
     def startWorkout(self):
         self.startTime = int(time.time())
         self.lastTime = self.startTime
+        self.updateStatus(text='')
 
 
     def heartBeat(self):
@@ -98,7 +102,7 @@ class MainDisplay(tk.Tk):
 
 
     def stopWorkout(self):
-        pass
+        self.updateStatus("Done!")
 
     #
     # Update the data the display is tracking
@@ -120,6 +124,10 @@ class MainDisplay(tk.Tk):
         
     def updateHeartBeat(self, beatsPerMin):
         self.Numbers.HeartRate.configure(text=str(beatsPerMin))
+
+
+    def updateStatus(self, **kwargs):
+        self.Numbers.Status.configure(kwargs)
 
 
 #
