@@ -28,7 +28,6 @@ import Display
 import aiotkinter
 
 
-charDecoderByHandle = {}
 stats               = {}
 
 from bleak import discover
@@ -36,7 +35,52 @@ from bleak import BleakClient
 from bleak import _logger as bleakLogger
 
 
-endOfWorkout = None
+def now():
+    return int(time.time())
+
+
+class WorkoutState:
+    #
+    # Idle -> Working out -> pause -> working out -> pause -> Ended
+    #   0          1           2          1            2       3
+    
+    def __init__(self):
+        self.state = 0
+        self.when  = now()
+
+    def start(self):
+        self.state = 1
+        self.when  = now()
+        
+    def pause(self):
+        self.state = 2;
+        self.when  = now()
+
+    def hasBeenPausedFor(self, secs):
+        if self.state != 2:
+            return False
+        if now() - self.when < secs:
+            return False
+        return True
+
+    def stop(self):
+        self.state = 3
+        self.when  = now()
+
+    def isIdle(self):
+        return self.state == 0 or self.state == 3
+
+    def isRunning(self):
+        return self.state == 1
+
+    def isPaused(self):
+        return self.state == 2
+
+    def isEnded(self):
+        return self.state == 3
+
+
+workoutState = WorkoutState()
 
 
 def decodeCSAFE(val):
@@ -51,7 +95,7 @@ def decodeCSAFE(val):
     print("CSAFE RSP: ", rsp)
 
     
-def decodeRowingStatus(val):
+def decodeRowingStatus(charHandle, val):
     global stats
     
     vals = struct.unpack('<HBHBBBBBBHBHBBB', val)
@@ -71,7 +115,7 @@ def decodeRowingStatus(val):
     print(stats)
 
     
-def decodeRowingStatus1(val):
+def decodeRowingStatus1(charHandle, val):
     global stats
     
     vals = struct.unpack('<HBHBBHHHBHB', val)
@@ -88,23 +132,44 @@ def decodeRowingStatus1(val):
     print(stats)
     
 
-def updateRowingStatus1(val):
+lastElapsedTime = None
+def updateRowingStatus1(charHandle, val):
     global window
+    global lastElapsedTime
     
     vals = struct.unpack('<HBHBBHHHBHB', val)
+
+    elapsedTime = (vals[1] << 16) + vals[0]
+    speed       = vals[2]/1000
+
+    # When rowing stops, elasped time stops, but speed keeps the last value
+    if speed > 0 and elapsedTime == lastElapsedTime:
+        speed = 0
+    print(lastElapsedTime, elapsedTime, speed)
+    lastElapsedTime = elapsedTime
     
+    if speed == 0:
+        if workoutState.isRunning():
+            print("Pausing...")
+            workoutState.pause()
+            window.pauseWorkout()
+        else:
+            if workoutState.hasBeenPausedFor(5):
+                print("Stopping...")
+                workoutState.stop()
+    else:
+        if workoutState.isIdle():
+            workoutState.start()
+        else:
+            if workoutState.isPaused():
+                print("Resuming...")
+                workoutState.start()
+                window.resumeWorkout()
+
     window.updateStrokeRate(vals[3])
-    window.updateSpeed(vals[2]/1000)
+    window.updateSpeed(speed)
     window.updateHeartBeat(vals[4])
     window.heartBeat()
-    
-
-def charUpdate(charHandle, data):
-    if charHandle in charDecoderByHandle:
-        charDecoderByHandle[charHandle](data)
-        return
-    print(charHandle);
-    print("ERROR: Update from unknown characteristic" + str(charHandle))
 
 
 PM5UUID = {'getSerial'  : uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'),
@@ -171,7 +236,6 @@ def unframeCSAFE(rspBytes):
 
     
 async def findRower():
-    global charDecoderByHandle
     devices = await discover()
     for device in devices:
         if 'PM5' in device.name:
@@ -184,26 +248,29 @@ async def runRower(rower):
         val = await client.read_gatt_char(PM5UUID['getSerial'])
         print("Connected to PM5 Serial no " + val.decode())
 
-        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
-        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus' ]).handle] = decodeRowingStatus
-        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = decodeRowingStatus1
-
-        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = updateRowingStatus1
+        charHandlerByHandle = {}
         
-        endOfWorkout = asyncio.Event()
+        # charHandlerByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
+        # charHandlerByHandle[client.services.get_characteristic(PM5UUID['RowStatus' ]).handle] = decodeRowingStatus
+        # charHandlerByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = decodeRowingStatus1
 
-        for charHandle in charDecoderByHandle.keys():
-            await client.start_notify(charHandle, charUpdate)
+        charHandlerByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = updateRowingStatus1
+        
+        for charHandle in charHandlerByHandle.keys():
+            await client.start_notify(charHandle, charHandlerByHandle[charHandle])
             
-        window.updateStatus(text="Start rowing!", fg='black')
+        window.updateStatus("Start rowing!")
 
-        print("Running...");
         # Get the serial No via CSAFE
         # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        await endOfWorkout.wait()
+        while not workoutState.isEnded():
+            await asyncio.sleep(1)
+
+        window.stopWorkout()
+        time.sleep(5)
 
         print("Disconnecting from rower...")
-        for charHandle in charDecoderByHandle.keys():
+        for charHandle in charHandlerByHandle.keys():
             val = await client.stop_notify(charHandle)
 
 
@@ -218,15 +285,15 @@ loop = asyncio.get_event_loop()
 rower = loop.run_until_complete(findRower())
 if rower is None:
     print("No PM5 rower found")
-    window.updateStatus(text="No PM5 rower found", fg='red')
+    window.updateStatus("No PM5 rower found", 'red')
     window.update()
     time.sleep(5)
     exit(1)
 
-window.updateStatus(text="Connected", fg='green')
+window.updateStatus("Connected", 'green')
 
 loop.run_until_complete(runRower(rower))
-time.sleep(2)
+time.sleep(30)
 
-window.stopWorkout()
-time.sleep(5)
+# Put the screen to sleep
+os.system('xset dpms force off')

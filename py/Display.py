@@ -85,13 +85,20 @@ class MainDisplay(tk.Tk):
         self.distance  = 0
         self.heartBeatState = False
 
+        self.freeze = False
+
     #
     # Start/stop workout display
     #
-    def startWorkout(self):
-        self.startTime = int(time.time())
-        self.lastTime = self.startTime
-        self.updateStatus(text='')
+    def startWorkout(self, now = None):
+        if now is None:
+            now = int(time.time())
+            
+        self.startTime = now
+        self.lastTime  = now
+        self.updateStatus("")
+
+        self.freeze = False
 
 
     def heartBeat(self):
@@ -102,22 +109,40 @@ class MainDisplay(tk.Tk):
         self.Numbers.Heart.configure(fg=color)
 
 
+    def pauseWorkout(self):
+        now = int(time.time())
+        self.lastTime  = now
+        self.updateStatus("PAUSED", 'red')
+        self.freeze = True
+
+
+    def resumeWorkout(self):
+        now = int(time.time())
+        self.startTime += now - self.lastTime
+        self.lastTime  = now
+        self.updateStatus("")
+
+        self.freeze = False
+
+
     def stopWorkout(self):
+        self.pauseWorkout()
         self.updateStatus("Done!")
 
     #
     # Update the data the display is tracking
     #
     def updateSpeed(self, speedInMeterPerSec):
+        if self.freeze:
+            return
+        
         now = int(time.time())
 
         if speedInMeterPerSec == 0:
             return
 
         if self.startTime is None:
-            self.startTime = now
-            self.lastTime  = now
-            self.updateStatus(text='')
+            self.startWorkout(now)
             
         self.Numbers.SplitTime.configure(text=MMSS(500 / speedInMeterPerSec))
         self.distance += speedInMeterPerSec * (now - self.lastTime)
@@ -128,6 +153,9 @@ class MainDisplay(tk.Tk):
         
         
     def updateStrokeRate(self, strokesPerMin):
+        if self.freeze:
+            return
+        
         self.Numbers.StrokeRate.configure(text=str(strokesPerMin))
 
         
@@ -137,8 +165,8 @@ class MainDisplay(tk.Tk):
         self.Numbers.HeartRate.configure(text=str(beatsPerMin))
 
 
-    def updateStatus(self, **kwargs):
-        self.Numbers.Status.configure(kwargs)
+    def updateStatus(self, text, color='black'):
+        self.Numbers.Status.configure(text=text, fg=color)
 
 
 #
