@@ -54,16 +54,16 @@ The async patterns must be strictly followed.
 * Discovers and connects to rower
 * Receives updates from rowing service every half-seconds.
 * Main screen design with updating rowing stats and status widget
+* Update on-screen widgets based on PM5 state updates
+* "Just Row" mode working
 
 ### To Do
 
 * Display
-  1. Update on-screen widgets based on PM5 state updates
   1. Add target stroke, pace, and heart rate to display widgets
   1. Course map/plot widget based on target/estimated total distance
   1. Add pace boat to course map/plot
 * Work-outs
-  1. Get "just-row" mode working
   1. Program, then run a work-out
   1. Alexa front-end to start app, program an X minutes or meters work-out
   1. Alexa utterance to pick work-out from pre-defined work-out database
@@ -78,6 +78,7 @@ The async patterns must be strictly followed.
 * Python 3.6 or later (required by Bleak)
 * Bleak
 * aiotkinter
+* x11-server-utils ('xset' command to wake up sleeping screen)
 
 ### References
 * [Bleak Github](https://github.com/hbldh/bleak)
