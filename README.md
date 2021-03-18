@@ -26,7 +26,7 @@ In development
 
 I was originally going to keep this repository and project private,
 but after attempting to post a question about the BLE API in the
-[Concept2 SDK Forum](), my post was rejected because it "*has the only
+[Concept2 SDK Forum](https://www.c2forum.com/viewforum.php?f=15), my post was rejected because it "*has the only
 purpose to advertise for a website or another product*". In fact, I was
 asking if anyone had made any progress on the issues reported in
 [that post](https://www.c2forum.com/viewtopic.php?f=15&t=194401) and
@@ -56,6 +56,10 @@ The async patterns must be strictly followed.
 * Main screen design with updating rowing stats and status widget
 * Update on-screen widgets based on PM5 state updates
 * "Just Row" mode working
+
+<p align="center">
+    <a href="https://i.imgur.com/X9t6vcD.mp4"><img src="https://i.imgur.com/fbk4ctn.png"></a>
+</p>
 
 ### To Do
 
