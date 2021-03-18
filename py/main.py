@@ -17,6 +17,7 @@
 import asyncio
 import logging
 import binascii
+import os
 import platform
 import struct
 import time
@@ -33,6 +34,9 @@ stats               = {}
 from bleak import discover
 from bleak import BleakClient
 from bleak import _logger as bleakLogger
+
+
+endOfWorkout = None
 
 
 def decodeCSAFE(val):
@@ -82,6 +86,17 @@ def decodeRowingStatus1(val):
     stats['RestTime']    = (vals[9] << 16) + vals[8]
     
     print(stats)
+    
+
+def updateRowingStatus1(val):
+    global window
+    
+    vals = struct.unpack('<HBHBBHHHBHB', val)
+    
+    window.updateStrokeRate(vals[3])
+    window.updateSpeed(vals[2]/1000)
+    window.updateHeartBeat(vals[4])
+    window.heartBeat()
     
 
 def charUpdate(charHandle, data):
@@ -169,38 +184,49 @@ async def runRower(rower):
         val = await client.read_gatt_char(PM5UUID['getSerial'])
         print("Connected to PM5 Serial no " + val.decode())
 
-        charDecoderByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
-        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus' ]).handle] = decodeRowingStatus
-        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = decodeRowingStatus1
+        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
+        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus' ]).handle] = decodeRowingStatus
+        # charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = decodeRowingStatus1
+
+        charDecoderByHandle[client.services.get_characteristic(PM5UUID['RowStatus1']).handle] = updateRowingStatus1
         
+        endOfWorkout = asyncio.Event()
+
         for charHandle in charDecoderByHandle.keys():
             await client.start_notify(charHandle, charUpdate)
             
+        window.updateStatus(text="Start rowing!", fg='black')
+
         print("Running...");
         # Get the serial No via CSAFE
         # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        await asyncio.sleep(10.0)
+        await endOfWorkout.wait()
 
         print("Disconnecting from rower...")
         for charHandle in charDecoderByHandle.keys():
             val = await client.stop_notify(charHandle)
 
 
-window = Display.MainDisplay(800, 1400)
-window.update()
+# Wake up a sleeping screen
+os.system('xset s reset')
+
+window = Display.MainDisplay(1100, 1680)
 
 asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
 loop = asyncio.get_event_loop()
 
 rower = loop.run_until_complete(findRower())
 if rower is None:
+    print("No PM5 rower found")
     window.updateStatus(text="No PM5 rower found", fg='red')
+    window.update()
     time.sleep(5)
     exit(1)
 
-window.updateStatus(text="Start rowing!")
+window.updateStatus(text="Connected", fg='green')
 
 loop.run_until_complete(runRower(rower))
+time.sleep(2)
 
 window.stopWorkout()
 time.sleep(5)

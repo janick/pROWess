@@ -33,7 +33,8 @@ class NumbersFrame(tk.Frame):
         self.Status      = tk.Label(master=self, text="Disconnected", font=('Arial', 20))
 
 
-        tk.Label(master=self, text="Left:", anchor="e", font=('Arial', 25), width=6).grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.TimeLabel = tk.Label(master=self, text="Time:", anchor="e", font=('Arial', 25), width=6)
+        self.TimeLabel.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.WorkoutTime.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.StrokeRate.grid( row=0, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
         tk.Label(master=self, text="s/m", anchor="w", font=('Arial', 20)).grid(row=0, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -110,6 +111,14 @@ class MainDisplay(tk.Tk):
     def updateSpeed(self, speedInMeterPerSec):
         now = int(time.time())
 
+        if speedInMeterPerSec == 0:
+            return
+
+        if self.startTime is None:
+            self.startTime = now
+            self.lastTime  = now
+            self.updateStatus(text='')
+            
         self.Numbers.SplitTime.configure(text=MMSS(500 / speedInMeterPerSec))
         self.distance += speedInMeterPerSec * (now - self.lastTime)
         self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distance)))
@@ -123,6 +132,8 @@ class MainDisplay(tk.Tk):
 
         
     def updateHeartBeat(self, beatsPerMin):
+        if beatsPerMin == 255:
+            return
         self.Numbers.HeartRate.configure(text=str(beatsPerMin))
 
 
