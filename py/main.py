@@ -23,6 +23,7 @@ import struct
 import time
 import uuid
 
+import Workout
 import Display
 
 import aiotkinter
@@ -39,46 +40,7 @@ def now():
     return int(time.time())
 
 
-class WorkoutState:
-    #
-    # Idle -> Working out -> pause -> working out -> pause -> Ended
-    #   0          1           2          1            2       3
-    
-    def __init__(self):
-        self.state = 0
-        self.when  = now()
-
-    def start(self):
-        self.state = 1
-        self.when  = now()
-        
-    def pause(self):
-        self.state = 2;
-        self.when  = now()
-
-    def hasBeenPausedFor(self):
-        if self.state != 2:
-            return 0
-        return now() - self.when
-
-    def stop(self):
-        self.state = 3
-        self.when  = now()
-
-    def isIdle(self):
-        return self.state == 0 or self.state == 3
-
-    def isRunning(self):
-        return self.state == 1
-
-    def isPaused(self):
-        return self.state == 2
-
-    def isEnded(self):
-        return self.state == 3
-
-
-workoutState = WorkoutState()
+workoutSession = None
 
 
 def decodeCSAFE(val):
@@ -132,44 +94,22 @@ def decodeRowingStatus1(charHandle, val):
 
 lastElapsedTime = None
 def updateRowingStatus1(charHandle, val):
-    global window
+    global workoutSession
     global lastElapsedTime
     
     vals = struct.unpack('<HBHBBHHHBHB', val)
 
     elapsedTime = (vals[1] << 16) + vals[0]
     speed       = vals[2]/1000
+    strokeRate  = vals[3]
+    heartBeat   = vals[4]
 
     # When rowing stops, elasped time stops, but speed keeps the last value
     if speed > 0 and elapsedTime == lastElapsedTime:
         speed = 0
     lastElapsedTime = elapsedTime
-    
-    if speed == 0:
-        if workoutState.isRunning():
-            workoutState.pause()
-            window.pauseWorkout()
-            window.updateStatus("PAUSED 10...", 'red')
-        else:
-            if workoutState.isPaused():
-                t = 10 - workoutState.hasBeenPausedFor()
-                if t <= 0:
-                    window.stopWorkout()
-                    workoutState.stop()
-                else:
-                    window.updateStatus("PAUSED " + str(t) + "...", 'red')
-    else:
-        if workoutState.isIdle():
-            workoutState.start()
-        else:
-            if workoutState.isPaused():
-                workoutState.start()
-                window.resumeWorkout()
 
-    window.updateStrokeRate(vals[3])
-    window.updateSpeed(speed)
-    window.updateHeartBeat(vals[4])
-    window.heartBeat()
+    workoutSession.update(speed, strokeRate, heartBeat)
 
 
 PM5UUID = {'getSerial'  : uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'),
@@ -260,13 +200,16 @@ async def runRower(rower):
             await client.start_notify(charHandle, charHandlerByHandle[charHandle])
             
         window.updateStatus("Start rowing!")
+        window.update()
 
         # Get the serial No via CSAFE
         # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        while not workoutState.isEnded():
+        while not workoutSession.state.isEnded():
             await asyncio.sleep(1)
 
-        print("Disconnecting from rower...")
+        window.updateStatus("Disconnecting...")
+        window.update()
+        await asyncio.sleep(1)
         for charHandle in charHandlerByHandle.keys():
             val = await client.stop_notify(charHandle)
 
@@ -275,9 +218,13 @@ async def runRower(rower):
 os.system('xset s reset')
 
 window = Display.MainDisplay(1100, 1680)
+workoutSession = Workout.Session(window)
 
 asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
 loop = asyncio.get_event_loop()
+
+window.updateStatus("Connecting...")
+window.update()
 
 rower = loop.run_until_complete(findRower())
 if rower is None:
@@ -287,9 +234,14 @@ if rower is None:
     time.sleep(5)
 else:
     window.updateStatus("Connected", 'green')
+    window.update()
 
     loop.run_until_complete(runRower(rower))
+
+    window.updateStatus("Done")
+    window.update()
     time.sleep(30)
 
 # Put the screen to sleep
+# Needs 'hdmi_blanking=1' in /boot/config.txt
 os.system('xset dpms force off')

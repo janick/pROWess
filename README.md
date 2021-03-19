@@ -36,9 +36,9 @@ I ran into the exact same problem.
 Good news: I figured out what I was doing wrong.
 
 Turns out you cannot read the PM5 BLE characteristics using the
-bleak.backends.client.BaseBleakClient::read_gatt_attr() method, except
+*bleak.backends.client.BaseBleakClient::read_gatt_attr()* method, except
 for the Device Information Service characteristics (UUIDs
-0x0011..0x0016).  The response you'll receive by reading all other
+0x0011 thru 0x0016).  The response you'll receive by reading all other
 characteritics will have the correct structure (number of bytes, CSAFE
 framing, etc...) but the variable content will be junk.  All other
 characteristics, including CSAFE command responses, must be read via a

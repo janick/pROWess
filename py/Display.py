@@ -18,6 +18,9 @@ import tkinter as tk
 import time
 
 
+def now():
+    return int(time.time())
+
 #
 # Frame with a set of widgets that displays the main workout numbers
 #
@@ -90,12 +93,12 @@ class MainDisplay(tk.Tk):
     #
     # Start/stop workout display
     #
-    def startWorkout(self, now = None):
-        if now is None:
-            now = int(time.time())
+    def start(self, nowT = None):
+        if nowT is None:
+            nowT = now()
             
-        self.startTime = now
-        self.lastTime  = now
+        self.startTime = nowT
+        self.lastTime  = nowT
         self.updateStatus("")
 
         self.freeze = False
@@ -109,24 +112,23 @@ class MainDisplay(tk.Tk):
         self.Numbers.Heart.configure(fg=color)
 
 
-    def pauseWorkout(self):
-        now = int(time.time())
-        self.lastTime  = now
+    def pause(self):
+        self.lastTime  = now()
         self.updateStatus("PAUSED", 'red')
         self.freeze = True
 
 
-    def resumeWorkout(self):
-        now = int(time.time())
-        self.startTime += now - self.lastTime
-        self.lastTime  = now
+    def resume(self):
+        nowT = now()
+        self.startTime += nowT - self.lastTime
+        self.lastTime  = nowT
         self.updateStatus("")
 
         self.freeze = False
 
 
-    def stopWorkout(self):
-        self.pauseWorkout()
+    def stop(self):
+        self.pause()
         self.updateStatus("Done!")
 
     #
@@ -136,20 +138,20 @@ class MainDisplay(tk.Tk):
         if self.freeze:
             return
         
-        now = int(time.time())
+        nowT = now()
 
         if speedInMeterPerSec == 0:
             return
 
         if self.startTime is None:
-            self.startWorkout(now)
+            self.start(nowT)
             
         self.Numbers.SplitTime.configure(text=MMSS(500 / speedInMeterPerSec))
-        self.distance += speedInMeterPerSec * (now - self.lastTime)
+        self.distance += speedInMeterPerSec * (nowT - self.lastTime)
         self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distance)))
-        self.Numbers.WorkoutTime.configure(text=MMSS(now - self.startTime))
+        self.Numbers.WorkoutTime.configure(text=MMSS(nowT - self.startTime))
 
-        self.lastTime = now
+        self.lastTime = nowT
         
         
     def updateStrokeRate(self, strokesPerMin):
