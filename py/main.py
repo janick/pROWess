@@ -56,12 +56,10 @@ class WorkoutState:
         self.state = 2;
         self.when  = now()
 
-    def hasBeenPausedFor(self, secs):
+    def hasBeenPausedFor(self):
         if self.state != 2:
-            return False
-        if now() - self.when < secs:
-            return False
-        return True
+            return 0
+        return now() - self.when
 
     def stop(self):
         self.state = 3
@@ -145,24 +143,26 @@ def updateRowingStatus1(charHandle, val):
     # When rowing stops, elasped time stops, but speed keeps the last value
     if speed > 0 and elapsedTime == lastElapsedTime:
         speed = 0
-    print(lastElapsedTime, elapsedTime, speed)
     lastElapsedTime = elapsedTime
     
     if speed == 0:
         if workoutState.isRunning():
-            print("Pausing...")
             workoutState.pause()
             window.pauseWorkout()
+            window.updateStatus("PAUSED 10...", 'red')
         else:
-            if workoutState.hasBeenPausedFor(5):
-                print("Stopping...")
-                workoutState.stop()
+            if workoutState.isPaused():
+                t = 10 - workoutState.hasBeenPausedFor()
+                if t <= 0:
+                    window.stopWorkout()
+                    workoutState.stop()
+                else:
+                    window.updateStatus("PAUSED " + str(t) + "...", 'red')
     else:
         if workoutState.isIdle():
             workoutState.start()
         else:
             if workoutState.isPaused():
-                print("Resuming...")
                 workoutState.start()
                 window.resumeWorkout()
 
@@ -266,9 +266,6 @@ async def runRower(rower):
         while not workoutState.isEnded():
             await asyncio.sleep(1)
 
-        window.stopWorkout()
-        time.sleep(5)
-
         print("Disconnecting from rower...")
         for charHandle in charHandlerByHandle.keys():
             val = await client.stop_notify(charHandle)
@@ -288,12 +285,11 @@ if rower is None:
     window.updateStatus("No PM5 rower found", 'red')
     window.update()
     time.sleep(5)
-    exit(1)
+else:
+    window.updateStatus("Connected", 'green')
 
-window.updateStatus("Connected", 'green')
-
-loop.run_until_complete(runRower(rower))
-time.sleep(30)
+    loop.run_until_complete(runRower(rower))
+    time.sleep(30)
 
 # Put the screen to sleep
 os.system('xset dpms force off')
