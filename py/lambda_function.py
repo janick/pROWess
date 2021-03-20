@@ -107,67 +107,75 @@ class EventHandler:
         if 'value' not in self.slots['TotalTime']:
             self.response = Response("Duration",
                                     "Sorry, but I do not understand how long of a workout your want. " +
-                                    "What workout would you like to start?")
+                                    "What workout or race would you like to start?")
             self.response.keepSessionOpen()
             return True
 
         duration = ISO8601_to_mins(self.slots['TotalTime']['value'])
 
-        self.updateShadow({'intensity': intensity, 'duration': duration, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': intensity, 'duration': duration, 'distance': None})
             
         self.response = Response("Workout", "Starting a {} {} minutes workout".format(intensity, duration))
         return True
         
         
-    def StartWorkoutDistance(self, slots):
+    def StartWorkoutDistance(self, slots, units):
         logging.debug("Distance: " + json.dumps(slots))
         
         intensity = "Normal"
         if 'value' in self.slots['Intensity']:
             intensity = self.slots['Intensity']['value']
 
-        if 'value' not in self.slots['TotalDistance'] or 'value' not in self.slots['Units']:
+        if 'value' not in self.slots['TotalDistance']:
             self.response = Response("Duration",
-                                    "Sorry, but I do not understand how long of a workout your want. " +
-                                    "What workout would you like to start?")
+                                    "Sorry, but I do not understand how long a race your want. " +
+                                    "What workout or race would you like to start?")
             self.response.keepSessionOpen()
             return True
 
         distance = int(self.slots['TotalDistance']['value'])
-        units  = self.slots['Units']['value']
+        distance *= units
 
-        self.updateShadow({'intensity': intensity, 'duration': None, 'distance': distance, 'units': units})
+        # If the distance is too short, ask again
+        if distance < 1000:
+            self.response = Response("Too Short", "A {} meters race is too short.  ".format(distance) +
+                                     "Tell me again what workout or race would you like to start?")
+            self.response.keepSessionOpen()
+            return True
             
-        self.response = Response("Workout", "Starting a {} {} {} workout".format(intensity, distance, units))
+
+        self.updateShadow({'intensity': intensity, 'duration': None, 'distance': distance})
+            
+        self.response = Response("Workout", "Starting a {} {} meters race".format(intensity, distance))
         return True
 
 
     def StartWorkoutFree(self):
-        self.updateShadow({'intensity': "Normal", 'duration': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Normal", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Starting a free workout.")
         return True
 
     
     def StartWorkoutScheduled(self):
-        self.updateShadow({'intensity': "Scheduled", 'duration': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Scheduled", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Starting today's scheduled workout.")
         return True
 
     
     def PauseWorkout(self):
-        self.updateShadow({'intensity': "Pause", 'duration': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Pause", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Pausing your work-out.")
         return True
 
     
     def ResumeWorkout(self):
-        self.updateShadow({'intensity': "Resume", 'duration': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Resume", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Resuming your paused workout.")
         return True
 
     
     def StopWorkout(self):
-        self.updateShadow({'intensity': "Abort", 'duration': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Abort", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Stopping your workout.")
         return True
 
@@ -194,8 +202,11 @@ class EventHandler:
         if intent['name'] == "WorkoutTime":
             return self.StartWorkoutTime(self.slots)
             
-        if intent['name'] == "WorkoutDistance":
-            return self.StartWorkoutDistance(self.slots)
+        if intent['name'] == "WorkoutDistanceMeters":
+            return self.StartWorkoutDistance(self.slots, 1)
+            
+        if intent['name'] == "WorkoutDistanceKilometers":
+            return self.StartWorkoutDistance(self.slots, 1000)
             
         if intent['name'] == "JustRow":
             return self.StartWorkoutFree()
