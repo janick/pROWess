@@ -1,0 +1,160 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "my rowing machine",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "WorkoutTime",
+                    "slots": [
+                        {
+                            "name": "Intensity",
+                            "type": "Intensity",
+                            "multipleValues": {
+                                "enabled": true
+                            }
+                        },
+                        {
+                            "name": "TotalTime",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "samples": [
+                        "Start a {TotalTime} {Intensity} workout",
+                        "Start a {Intensity} {TotalTime} workout"
+                    ]
+                },
+                {
+                    "name": "WorkoutDistanceMeters",
+                    "slots": [
+                        {
+                            "name": "Intensity",
+                            "type": "Intensity"
+                        },
+                        {
+                            "name": "TotalDistance",
+                            "type": "AMAZON.NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "Start a {TotalDistance} meters {Intensity} race",
+                        "Start a {Intensity} {TotalDistance} meters race"
+                    ]
+                },
+                {
+                    "name": "JustRow",
+                    "slots": [],
+                    "samples": [
+                        "Just let me row",
+                        "Just row",
+                        "Start a free rowing workout"
+                    ]
+                },
+                {
+                    "name": "ScheduledWorkout",
+                    "slots": [],
+                    "samples": [
+                        "Start the scheduled workout",
+                        "Start today's scheduled workout",
+                        "Start today's workout"
+                    ]
+                },
+                {
+                    "name": "PauseWorkout",
+                    "slots": [],
+                    "samples": [
+                        "Pause my workout"
+                    ]
+                },
+                {
+                    "name": "ResumeWorkout",
+                    "slots": [],
+                    "samples": [
+                        "Resume my workout "
+                    ]
+                },
+                {
+                    "name": "StopWorkout",
+                    "slots": [],
+                    "samples": [
+                        "Abort my workout",
+                        "Cancel my workout"
+                    ]
+                },
+                {
+                    "name": "WorkoutDistanceKilometers",
+                    "slots": [
+                        {
+                            "name": "TotalDistance",
+                            "type": "AMAZON.NUMBER"
+                        },
+                        {
+                            "name": "Intensity",
+                            "type": "Intensity"
+                        }
+                    ],
+                    "samples": [
+                        "Start a {Intensity} {TotalDistance} kilometers race",
+                        "Start a {TotalDistance} kilometers {Intensity}  race"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "Intensity",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Normal",
+                                "synonyms": [
+                                    "Medium",
+                                    "Regular"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Strength"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Cardio"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Interval"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Intense"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Easy"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
