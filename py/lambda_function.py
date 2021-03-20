@@ -136,38 +136,38 @@ class EventHandler:
         distance = int(self.slots['TotalDistance']['value'])
         units  = self.slots['Units']['value']
 
-        self.updateShadow({'intensity': intensity, 'length': None, 'distance': distance, 'units': units})
+        self.updateShadow({'intensity': intensity, 'duration': None, 'distance': distance, 'units': units})
             
         self.response = Response("Workout", "Starting a {} {} {} workout".format(intensity, distance, units))
         return True
 
 
     def StartWorkoutFree(self):
-        self.updateShadow({'intensity': "Normal", 'length': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Normal", 'duration': None, 'distance': None, 'units': None})
         self.response = Response("Workout", "Starting a free workout.")
         return True
 
     
     def StartWorkoutScheduled(self):
-        self.updateShadow({'intensity': "Scheduled", 'length': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Scheduled", 'duration': None, 'distance': None, 'units': None})
         self.response = Response("Workout", "Starting today's scheduled workout.")
         return True
 
     
     def PauseWorkout(self):
-        self.updateShadow({'intensity': "Pause", 'length': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Pause", 'duration': None, 'distance': None, 'units': None})
         self.response = Response("Workout", "Pausing your work-out.")
         return True
 
     
     def ResumeWorkout(self):
-        self.updateShadow({'intensity': "Resume", 'length': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Resume", 'duration': None, 'distance': None, 'units': None})
         self.response = Response("Workout", "Resuming your paused workout.")
         return True
 
     
     def StopWorkout(self):
-        self.updateShadow({'intensity': "Abort", 'length': None, 'distance': None, 'units': None})
+        self.updateShadow({'intensity': "Abort", 'duration': None, 'distance': None, 'units': None})
         self.response = Response("Workout", "Stopping your workout.")
         return True
 
