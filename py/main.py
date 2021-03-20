@@ -214,6 +214,36 @@ async def runRower(rower):
             val = await client.stop_notify(charHandle)
 
 
+#
+# This program runs at all times. Start automatically via /etc/rc script.
+#
+# In idle state, the screen is powered off and disconnected from the PM5
+#
+# Alexa, ask MyRower to start an [easy|intense] [n] meters|minutes workout"
+#       -> Turn on screen and connects to PM5
+#       -> Generate splits, start session
+#       "Your workout will start when you start rowing"
+#
+# "Alexa, open MyRower"
+#       -> Turn on screen and connects to PM5
+#       "What kind of workout would you like?"
+#
+#    "Start an [easy|intense] [n] meters|minutes workout"
+#       -> Generate splits, start session
+#       "Your workout will start when you start rowing"
+#
+#    "Alexa, tell MyRower to stop my workout"
+#       -> Abort workout, go to idle
+#
+#    "Alexa, tell MyRower to pause my workout"
+#       -> Pause workout, without 10 secs abort timer
+#       "Your workout will resume when you resume rowing"
+#
+# At end of workout
+#       -> Go to idle
+#       See if we can get Alexa to say something
+# 
+
 # Wake up a sleeping screen
 os.system('xset s reset')
 
