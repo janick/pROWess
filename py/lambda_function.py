@@ -142,6 +142,36 @@ class EventHandler:
         return True
 
 
+    def StartWorkoutFree(self):
+        self.updateShadow({'intensity': "Normal", 'length': None, 'distance': None, 'units': None})
+        self.response = Response("Workout", "Starting a free workout.")
+        return True
+
+    
+    def StartWorkoutScheduled(self):
+        self.updateShadow({'intensity': "Scheduled", 'length': None, 'distance': None, 'units': None})
+        self.response = Response("Workout", "Starting today's scheduled workout.")
+        return True
+
+    
+    def PauseWorkout(self):
+        self.updateShadow({'intensity': "Pause", 'length': None, 'distance': None, 'units': None})
+        self.response = Response("Workout", "Pausing your work-out.")
+        return True
+
+    
+    def ResumeWorkout(self):
+        self.updateShadow({'intensity': "Resume", 'length': None, 'distance': None, 'units': None})
+        self.response = Response("Workout", "Resuming your paused workout.")
+        return True
+
+    
+    def StopWorkout(self):
+        self.updateShadow({'intensity': "Abort", 'length': None, 'distance': None, 'units': None})
+        self.response = Response("Workout", "Stopping your workout.")
+        return True
+
+    
     # When the skill gets launched
     def onLaunch(self):
         self.response = Response("Workout", "What workout would you like to start?")
@@ -167,20 +197,35 @@ class EventHandler:
         if intent['name'] == "WorkoutDistance":
             return self.StartWorkoutDistance(self.slots)
             
-        self.response = Response("Sorry", "Sorry. Your your rower doesn't know how to do that.")
+        if intent['name'] == "JustRow":
+            return self.StartWorkoutFree()
+            
+        if intent['name'] == "ScheduledWorkout":
+            return self.StartWorkoutScheduled()
+            
+        if intent['name'] == "PauseWorkout":
+            return self.PauseWorkout()
+            
+        if intent['name'] == "ResumeWorkout":
+            return self.ResumeWorkout()
+            
+        if intent['name'] == "StopWorkout":
+            return self.StopWorkout()
+            
+        self.response = Response("Sorry", "Sorry. Your rower doesn't know how to do that.")
         return False;
 
 
     def help(self, prefix):
         self.response = Response("Help", prefix + \
-                                "I can connect and monitor a workout on your Concept2 Rower. " + \
-                                "Just ask me to start an easy, normal, or intense 30 minutes or 3000 meters workout.")
+                                "I can connect and monitor a workout on your rowing machine. " + \
+                                 "Just ask me to start an easy, normal, or intense 30 minutes or 3000 meters workout. " +
+                                 "You can also ask me to pause, resume, or stop a workout in progress.")
         self.response.keepSessionOpen()
         return True
 
 
     def onEnd(self):
-        self.response = Response("Session Ended", "Have a good workout!")
         return True
 
 
