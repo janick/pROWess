@@ -79,6 +79,27 @@ class EventHandler:
         self.topic          = "$aws/things/MyRower/shadow/update"
         self.shadowClient   = boto3.client('iot-data', 'us-east-1')
 
+
+    def validateIntensity(self, intensity):
+        validIntensities = {'easy': "Easy",
+                            'normal': "Normal",
+                            'intense': "Intense",
+                            'cardio': "Cardio",
+                            'strength': "Strength",
+                            'interval': "Interval"};
+
+        intensity = intensity.lower()
+        if intensity not in validIntensities:
+            self.response = Response("Intensity",
+                                     "Sorry, but I do not know about " + intensity + " workouts. I only know about " +
+                                     "easy, normal, intense, cardio, strength, and interval workouts. " +
+                                     "Tell me again: What workout or race would you like to start?")
+            self.response.keepSessionOpen()
+            return None
+
+        return validIntensities[intensity]
+
+
     def updateShadow(self, new_value_dict):
         """
         Updates IoT shadow's "desired" state with values from new_value_dict. Logs
@@ -103,6 +124,9 @@ class EventHandler:
         intensity = "Normal"
         if 'value' in self.slots['Intensity']:
             intensity = self.slots['Intensity']['value']
+        intensity = self.validateIntensity(intensity)
+        if intensity is None:
+            return True
 
         if 'value' not in self.slots['TotalTime']:
             self.response = Response("Duration",
@@ -112,6 +136,13 @@ class EventHandler:
             return True
 
         duration = ISO8601_to_mins(self.slots['TotalTime']['value'])
+
+        # If the duration is too short, ask again
+        if duration < 20:
+            self.response = Response("Too Short", "A {} minutes workout is too short.  ".format(duration) +
+                                     "Tell me again: what workout or race would you like to start?")
+            self.response.keepSessionOpen()
+            return True
 
         self.updateShadow({'intensity': intensity, 'duration': duration, 'distance': None})
             
@@ -125,6 +156,9 @@ class EventHandler:
         intensity = "Normal"
         if 'value' in self.slots['Intensity']:
             intensity = self.slots['Intensity']['value']
+        intensity = self.validateIntensity(intensity)
+        if intensity is None:
+            return True
 
         if 'value' not in self.slots['TotalDistance']:
             self.response = Response("Duration",
@@ -139,7 +173,7 @@ class EventHandler:
         # If the distance is too short, ask again
         if distance < 1000:
             self.response = Response("Too Short", "A {} meters race is too short.  ".format(distance) +
-                                     "Tell me again what workout or race would you like to start?")
+                                     "Tell me again: what workout or race would you like to start?")
             self.response.keepSessionOpen()
             return True
             
