@@ -56,6 +56,7 @@ The async patterns must be strictly followed.
 * Main screen design with updating rowing stats and status widget
 * Update on-screen widgets based on PM5 state updates
 * "Just Row" mode working
+* Alexa front-end to start app, program an X minutes or meters work-out
 
 <p align="center">
     <a href="https://i.imgur.com/X9t6vcD.mp4"><img src="https://i.imgur.com/fbk4ctn.png"></a>
@@ -69,7 +70,6 @@ The async patterns must be strictly followed.
   1. Add pace boat to course map/plot
 * Work-outs
   1. Program, then run a work-out
-  1. Alexa front-end to start app, program an X minutes or meters work-out
   1. Alexa utterance to pick work-out from pre-defined work-out database
   1. Log workout
 * User Profiles
