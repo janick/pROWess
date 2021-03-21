@@ -102,6 +102,7 @@ class MainDisplay(tk.Tk):
         if self.durationGoal == None:
             self.Numbers.TimeLabel.configure(text="Time:")
         else:
+            self.durationGoal *= 60
             self.Numbers.TimeLabel.configure(text="Left:")
             self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
             

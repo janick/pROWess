@@ -102,7 +102,7 @@ class Session():
         self.splits  = []
 
     def createSplits(self, intensity, duration, distance):
-        self.splits = [[duration*60, distance]]
+        self.splits = [[duration, distance]]
         self.state.reset()
         return True
 
