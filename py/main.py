@@ -17,6 +17,7 @@
 import asyncio
 import logging
 import binascii
+import json
 import os
 import platform
 import struct
@@ -27,6 +28,107 @@ import Workout
 import Display
 
 import aiotkinter
+
+
+#
+# AWS IoT
+#
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
+
+
+thingName = "MyRower"
+clientId  = "pROWess"
+host      = "a2oc0d7o6qxm4z-ats.iot.us-east-1.amazonaws.com"
+port      = 8883
+
+HOME = "/home/janick"
+rootCAPath      = HOME + "/pROWess/certificates/AmazonRootCA1.pem"
+certificatePath = HOME + "/pROWess/certificates/4c4806177e-certificate.pem.crt"
+privateKeyPath  = HOME + "/pROWess/certificates/4c4806177e-private.pem.key"
+publicKeyPath   = HOME + "/pROWess/certificates/4c4806177e-public.pem.key"
+
+class MyMQTTClient:
+    """
+    Client to maintain a connection between the Raspberry Pi and the IoT Shadow.
+    """
+    def __init__(self, display, workout):
+        self.display = display
+        self.workout = workout
+        
+        self.shadowClient = AWSIoTMQTTShadowClient(clientId)
+
+        self.shadowClient.configureEndpoint(host, port)
+        self.shadowClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
+        self.shadowClient.configureAutoReconnectBackoffTime(1, 32, 20)
+        self.shadowClient.configureConnectDisconnectTimeout(10)
+        self.shadowClient.configureMQTTOperationTimeout(1)
+
+        self.display.updateStatus("Connecting to AWS IoT...")
+        self.display.update()
+        self.shadowClient.connect()
+
+        self.shadowHandler = self.shadowClient.createShadowHandlerWithName(thingName, True)
+        self.shadowHandler.shadowRegisterDeltaCallback(self.delta_callback)
+        self.gotoIdle()
+
+        self.display.updateStatus("")
+        self.display.update()
+
+        
+    def isIdle(self):
+        return self.shadowState['intensity'] == "Idle"
+
+
+    def gotoIdle(self):
+        self.shadowState = {'intensity': "Idle", 'duration': None, 'distance': None}
+        update = {'state': {'reported': self.shadowState, 'desired': self.shadowState}}
+        self.shadowHandler.shadowUpdate(json.dumps(update), None, 5)
+    
+        
+    def delta_callback(self, payload, token, arg):
+        delta = json.loads(payload)['state']
+        print("Delta: ", delta)
+
+        if 'duration' in delta:
+            self.shadowState['duration'] = delta['duration']
+        if 'distance' in delta:
+            self.shadowState['distance'] = delta['distance']
+                
+        if 'intensity' in delta:
+            self.gotoNextState(delta['intensity'], delta)
+
+        if self.shadowState['intensity'] == "Idle":
+            self.gotoIdle()
+            return
+        
+        update = {'state': {'reported': self.shadowState, 'desired': self.shadowState}}
+        self.shadowHandler.shadowUpdate(json.dumps(update), None, 5)
+
+
+    def gotoNextState(self, nextState, delta):
+        # Can go from Idle -> Start new workout
+        if self.shadowState['intensity'] == "Idle":
+            if nextState in ["Easy", "Normal", "Intense", "Interval", "Cardio", "Strength", "Scheduled"]:
+                
+                if self.workout.createSplits(nextState, self.shadowState['duration'], self.shadowState['distance']):
+                    self.shadowState['intensity'] = nextState
+                    return True
+                return False
+
+        # Anything else, we're in the middle of a work out.
+        # Can only abort
+        if nextState == "Abort":
+            self.workout.abort()
+            self.gotoIdle()
+            return True
+
+        # Ignore the command
+        return False
+                
+
+#
+# PM-5 BLE
+#
 
 
 stats               = {}
@@ -207,6 +309,7 @@ async def runRower(rower):
         while not workoutSession.state.isEnded():
             await asyncio.sleep(1)
 
+        
         window.updateStatus("Disconnecting...")
         window.update()
         await asyncio.sleep(1)
@@ -250,28 +353,48 @@ os.system('xset s reset')
 window = Display.MainDisplay(1100, 1680)
 workoutSession = Workout.Session(window)
 
+shadowIoT = MyMQTTClient(window, workoutSession)
+
 asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
 loop = asyncio.get_event_loop()
 
-window.updateStatus("Connecting...")
-window.update()
-
-rower = loop.run_until_complete(findRower())
-if rower is None:
-    print("No PM5 rower found")
-    window.updateStatus("No PM5 rower found", 'red')
+while True:
+    window.updateStatus("Waiting for workout request...")
     window.update()
-    time.sleep(5)
-else:
+
+    startedWaiting = now()
+    while shadowIoT.isIdle():
+        # Refresh the message every minute
+        if (now() - startedWaiting) % 60 == 0:
+            window.updateStatus("Waiting for workout request...")
+            window.update()
+        # Turn off the screen if we've been waiting for a while
+        if now() - startedWaiting > 30:  #10 * 60:
+            # Put the screen to sleep
+            # Needs 'hdmi_blanking=1' in /boot/config.txt
+            os.system('xset dpms force off')
+        time.sleep(1)
+        
+    # Wake up a sleeping screen
+    os.system('xset s reset')
+
+    window.updateStatus("Connecting to PM5...")
+    window.update()
+
+    rower = loop.run_until_complete(findRower())
+    if rower is None:
+        print("No PM5 rower found")
+        window.updateStatus("No PM5 rower found", 'red')
+        window.update()
+        continue
+
     window.updateStatus("Connected", 'green')
     window.update()
 
+    workoutSession.startSplits()
+    
     loop.run_until_complete(runRower(rower))
-
-    window.updateStatus("Done")
+    shadowIoT.gotoIdle()
+    
+    window.updateStatus("Workout done.")
     window.update()
-    time.sleep(30)
-
-# Put the screen to sleep
-# Needs 'hdmi_blanking=1' in /boot/config.txt
-os.system('xset dpms force off')

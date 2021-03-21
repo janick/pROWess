@@ -44,7 +44,8 @@ class NumbersFrame(tk.Frame):
         tk.Label(master=self, text="Split:", anchor="e", font=('Arial', 25)).grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.SplitTime.grid(  row=1, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
         tk.Label(master=self, text="/500 m", anchor="w", font=('Arial', 25)).grid(row=1, column=2, columnspan=2, sticky=tk.N+tk.S+tk.E+tk.W)
-        tk.Label(master=self, text="Dist:", anchor="e", font=('Arial', 25)).grid(row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.DistanceLabel = tk.Label(master=self, text="Dist:", anchor="e", font=('Arial', 25))
+        self.DistanceLabel.grid(row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.Distance.grid(   row=2, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.HeartRate.grid(  row=2, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
         self.Heart = tk.Label(master=self, text="♥", anchor="w", font=('Arial bold', 60), fg='red')
@@ -88,8 +89,29 @@ class MainDisplay(tk.Tk):
         self.distance  = 0
         self.heartBeatState = False
 
+        self.distanceGoal = None
+        self.durationGoal = None
+
         self.freeze = False
 
+    #
+    # Configure the next split
+    #
+    def configureSplit(self, duration, distance):
+        self.durationGoal = duration
+        if self.durationGoal == None:
+            self.Numbers.TimeLabel.configure(text="Time:")
+        else:
+            self.Numbers.TimeLabel.configure(text="Left:")
+            self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
+            
+        self.distanceGoal = distance
+        if self.distanceGoal == None:
+            self.Numbers.DistanceLabel.configure(text="Dist:")
+        else:
+            self.Numbers.DistanceLabel.configure(text="Left:")
+            self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distanceGoal)))
+    
     #
     # Start/stop workout display
     #
@@ -99,6 +121,7 @@ class MainDisplay(tk.Tk):
             
         self.startTime = nowT
         self.lastTime  = nowT
+        self.distance  = 0
         self.updateStatus("")
 
         self.freeze = False
@@ -129,29 +152,55 @@ class MainDisplay(tk.Tk):
 
     def stop(self):
         self.pause()
+        self.distance = 0
+        self.distanceGoal = None
+        self.durationGoal = None
         self.updateStatus("Done!")
 
     #
     # Update the data the display is tracking
+    # Return True is the current split is finished
     #
     def updateSpeed(self, speedInMeterPerSec):
         if self.freeze:
-            return
+            return False
         
         nowT = now()
 
         if speedInMeterPerSec == 0:
-            return
+            return False
 
         if self.startTime is None:
             self.start(nowT)
-            
+
+        splitDone = False;
+        
+        duration = nowT - self.startTime
+        if self.durationGoal == None:
+            self.Numbers.WorkoutTime.configure(text=MMSS(duration))
+        else:
+            left = self.durationGoal - duration
+            if left < 0:
+                left = 0
+            self.Numbers.WorkoutTime.configure(text=MMSS(left))
+            if left == 0:
+                splitDone = True
+
         self.Numbers.SplitTime.configure(text=MMSS(500 / speedInMeterPerSec))
+
         self.distance += speedInMeterPerSec * (nowT - self.lastTime)
-        self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distance)))
-        self.Numbers.WorkoutTime.configure(text=MMSS(nowT - self.startTime))
+        if self.distanceGoal == None:
+            self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distance)))
+        else:
+            left = self.distanceGoal - self.distance
+            if left < 0:
+                left = 0
+            self.Numbers.Distance.configure(text="{:4d} m".format(int(left)))
+            if left == 0:
+                splitDone = True
 
         self.lastTime = nowT
+        return splitDone
         
         
     def updateStrokeRate(self, strokesPerMin):

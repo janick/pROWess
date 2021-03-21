@@ -34,13 +34,19 @@ class State:
     def __init__(self):
         self.state = 0
         self.when  = now()
+        # You have 5 mins secs to resume a work-out
+        self.maxPause = 5*60
 
     def reset(self):
         self.state = 0
         self.when  = now()
 
+    def abort(self):
+        self.state = 3
+        self.when  = now()
+
     def isIdle(self):
-        return self.state == 0 or self.state == 3
+        return self.state == 0
 
     def isRunning(self):
         return self.state == 1
@@ -56,6 +62,9 @@ class State:
 
     # Return None or state change
     def update(self, speed):
+        if self.isEnded():
+            return State.STOPPED
+            
         if speed == 0:
             if self.isRunning():
                 self.state = 2;
@@ -63,8 +72,7 @@ class State:
                 return State.PAUSED
 
             if self.isPaused():
-                # You have 10 secs to resume a work-out
-                if self.hasBeenFor() >= 10:
+                if self.hasBeenFor() >= self.maxPause:
                     self.state = 3;
                     self.when  = now()
                     return State.STOPPED
@@ -87,11 +95,24 @@ class State:
 
 class Session():
 
-    def __init__(self, display, splits=None):
+    def __init__(self, display):
         self.display = display
-        self.splits  = splits
+        self.splits  = None
         self.state   = State()
-        
+        self.splits  = []
+
+    def createSplits(self, intensity, duration, distance):
+        self.splits = [[duration, distance]]
+        self.state.reset()
+        return True
+
+    def startSplits(self):
+        if len(self.splits) > 0:
+            self.display.configureSplit(self.splits[0][0], self.splits[0][1])
+            self.splits.pop(0)
+        self.state.reset()
+        return True
+
     def update(self, speed, strokeRate, heartRate):
         self.display.heartBeat()
 
@@ -108,12 +129,21 @@ class Session():
                 self.display.stop()
                                 
         self.display.updateStrokeRate(strokeRate)
-        self.display.updateSpeed(speed)
+        if self.display.updateSpeed(speed):
+            # Move to the next split
+            if len(self.splits) > 0:
+                self.startSplits;
+            else:
+                self.abort()
+                
         self.display.updateHeartBeat(heartRate)
 
         if self.state.isPaused():
-            countDown = 9 - self.state.hasBeenFor()
+            countDown = self.state.maxPause - self.state.hasBeenFor()
             if countDown >= 0:
-                self.display.updateStatus("PAUSED {:d}...".format(countDown), 'red')
+                self.display.updateStatus("PAUSED {:d}:{:02d}...".format(int(countDown/60), countDown % 60), 'red')
 
         self.display.update()
+
+    def abort(self):
+        self.state.abort()

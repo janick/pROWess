@@ -18,9 +18,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
+<!-- language: lang-none -->
+   +-------+     +----------+     +---------+     +-----------+     +---------+
+   | Alexa | --> |  Lambda  | --> | AWS IoT | --> | Raspberry | --> |   PM5   |
+   | Voice |     | Function |     | shadow  |     |    Pi     |     | Monitor |
+   +-------+     +----------+     +---------+     +-----------+     +---------+
+
+Make sure you have the right policies attached to the correct AWS roles and certificates!
+
+
 ### Status
 
-In development
+In development.
 
 #### Dear Concept2,
 
@@ -49,18 +58,20 @@ Bleak. Python was not giving any run-time errors, but calling regular
 subroutines and passing the async manager as argument appears to break things.
 The async patterns must be strictly followed.
 
+
 ### What works today
 
 * Discovers and connects to rower
 * Receives updates from rowing service every half-seconds.
-* Main screen design with updating rowing stats and status widget
-* Update on-screen widgets based on PM5 state updates
-* "Just Row" mode working
-* Alexa front-end to start app, program an X minutes or meters work-out
+* Main screen design with updating rowing stats and status widget from PM5 state updates
+* "Just Row" mode working, with auto-pause, resume, and stop
+* Alexa front-end to start app, program an X minutes or meters work-out or scheduled workout,
+  pause, resume, and stop a work-out
 
 <p align="center">
     <a href="https://i.imgur.com/X9t6vcD.mp4"><img src="https://i.imgur.com/fbk4ctn.png"></a>
 </p>
+
 
 ### To Do
 
@@ -70,7 +81,6 @@ The async patterns must be strictly followed.
   1. Add pace boat to course map/plot
 * Work-outs
   1. Program, then run a work-out
-  1. Alexa utterance to pick work-out from pre-defined work-out database
   1. Log workout
 * User Profiles
   1. Scale work-out target parameters based on user profile data
@@ -83,6 +93,8 @@ The async patterns must be strictly followed.
 * Bleak
 * aiotkinter
 * x11-server-utils ('xset' command to wake up sleeping screen)
+* AWSIoTPythonSDK
+
 
 ### References
 * [Bleak Github](https://github.com/hbldh/bleak)

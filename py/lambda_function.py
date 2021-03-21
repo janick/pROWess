@@ -202,12 +202,6 @@ class EventHandler:
         return True
 
     
-    def ResumeWorkout(self):
-        self.updateShadow({'intensity': "Resume", 'duration': None, 'distance': None})
-        self.response = Response("Workout", "Resuming your paused workout.")
-        return True
-
-    
     def StopWorkout(self):
         self.updateShadow({'intensity': "Abort", 'duration': None, 'distance': None})
         self.response = Response("Workout", "Stopping your workout.")

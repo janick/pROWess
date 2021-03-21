@@ -75,20 +75,6 @@
                     ]
                 },
                 {
-                    "name": "PauseWorkout",
-                    "slots": [],
-                    "samples": [
-                        "Pause my workout"
-                    ]
-                },
-                {
-                    "name": "ResumeWorkout",
-                    "slots": [],
-                    "samples": [
-                        "Resume my workout "
-                    ]
-                },
-                {
                     "name": "StopWorkout",
                     "slots": [],
                     "samples": [
