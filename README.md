@@ -64,9 +64,8 @@ The async patterns must be strictly followed.
 * Discovers and connects to rower
 * Receives updates from rowing service every half-seconds.
 * Main screen design with updating rowing stats and status widget from PM5 state updates
-* "Just Row" mode working, with auto-pause, resume, and stop
-* Alexa front-end to start app, program an X minutes or meters work-out or scheduled workout,
-  pause, resume, and stop a work-out
+* Alexa front-end to start app, program an X minutes or meters work-out or scheduled workout, cancel a work-out
+* Free, duration, and distance-based workouts working, with auto-pause, resume, and stop
 
 <p align="center">
     <a href="https://i.imgur.com/X9t6vcD.mp4"><img src="https://i.imgur.com/fbk4ctn.png"></a>
