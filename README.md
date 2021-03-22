@@ -18,11 +18,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-<!-- language: lang-none -->
+### Architecture
+
+```
    +-------+     +----------+     +---------+     +-----------+     +---------+
    | Alexa | --> |  Lambda  | --> | AWS IoT | --> | Raspberry | --> |   PM5   |
    | Voice |     | Function |     | shadow  |     |    Pi     |     | Monitor |
    +-------+     +----------+     +---------+     +-----------+     +---------+
+```
 
 Make sure you have the right policies attached to the correct AWS roles and certificates!
 
@@ -68,7 +71,7 @@ The async patterns must be strictly followed.
 * Free, duration, and distance-based workouts working, with auto-pause, resume, and stop
 
 <p align="center">
-    <a href="https://www.dropbox.com/s/sa7xqwx9p23392f/pROWess%20Demo.mp4?dl=0"><img src="https://i.imgur.com/fbk4ctn.png"></a>
+    <a href="https://www.youtube.com/watch?v=IyZWkJyNZEs"><img src="https://i.imgur.com/fbk4ctn.png"></a>
 </p>
 
 
