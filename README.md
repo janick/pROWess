@@ -68,7 +68,7 @@ The async patterns must be strictly followed.
 * Free, duration, and distance-based workouts working, with auto-pause, resume, and stop
 
 <p align="center">
-    <a href="https://i.imgur.com/X9t6vcD.mp4"><img src="https://i.imgur.com/fbk4ctn.png"></a>
+    <a href="https://www.dropbox.com/s/sa7xqwx9p23392f/pROWess%20Demo.mp4?dl=0"><img src="https://i.imgur.com/fbk4ctn.png"></a>
 </p>
 
 
