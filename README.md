@@ -82,7 +82,7 @@ The async patterns must be strictly followed.
   1. Course map/plot widget based on target/estimated total distance
   1. Add pace boat to course map/plot
 * Work-outs
-  1. Program, then run a work-out
+  1. Program, then run a multi-splits work-out (e.g. warm-up and cool-down)
   1. Log workout
 * User Profiles
   1. Scale work-out target parameters based on user profile data
