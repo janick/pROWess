@@ -105,12 +105,12 @@ class MainDisplay(tk.Tk):
         else:
             self.durationGoal *= User.secsInOneMin
             self.Numbers.TimeLabel.configure(text="Left:")
-            self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
-            
-        self.distanceGoal = distance * User.metersInOneKm / 1000
+            self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))   
+
         if self.distanceGoal == None:
             self.Numbers.DistanceLabel.configure(text="Dist:")
         else:
+            self.distanceGoal = distance * User.metersInOneKm / 1000
             self.Numbers.DistanceLabel.configure(text="Left:")
             self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distanceGoal)))
     

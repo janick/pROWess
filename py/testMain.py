@@ -56,7 +56,8 @@ if testMode == "Time":
     workoutSession.createSplits("Normal", 30, None)
 if testMode == "Distance":
     workoutSession.createSplits("Normal", None, 5000)
-    
+workoutSession.startSplits()
+
 interval = 0.5
 for i in range(10):
     time.sleep(interval)

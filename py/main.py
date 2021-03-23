@@ -350,7 +350,7 @@ async def runRower(rower):
 #       -> Go to idle
 #       See if we can get Alexa to say something
 # 
-
+testMode = None
 
 User.defineUser()
 
@@ -359,6 +359,13 @@ for arg in sys.argv:
         User.secsInOneMin  = 1
         User.metersInOneKm = 10
 
+    if arg == "-Tt":
+        testMode = 'Time'
+    if arg == "-Td":
+        testMode = 'Distance'
+    if arg == "-T":
+        testMode = 'Free'
+
         
 # Wake up a sleeping screen
 os.system('xset s reset')
@@ -366,6 +373,30 @@ os.system('xset s reset')
 
 window = Display.MainDisplay(User.screenSize['X'], User.screenSize['Y'])
 workoutSession = Workout.Session(window)
+
+if testMode != None:
+    if testMode == "Time":
+        workoutSession.createSplits("Normal", 30, None)
+    if testMode == "Distance":
+        workoutSession.createSplits("Normal", None, 5000)
+        interval = 0.5
+        for i in range(10):
+            time.sleep(interval)
+            workoutSession.update(0, 0, 78)
+        for i in range(20):
+            time.sleep(interval)
+            workoutSession.update(2, 20, 90)
+        for i in range(6):
+            time.sleep(interval)
+            workoutSession.update(0, 0, 85)
+        for i in range(20):
+            time.sleep(interval)
+            workoutSession.update(2, 20, 90)
+        for i in range(20):
+            time.sleep(interval)
+            workoutSession.update(0, 0, 80)
+        time.sleep(20)
+    exit(0)
 
 shadowIoT = MyMQTTClient(window, workoutSession)
 

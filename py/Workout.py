@@ -37,7 +37,7 @@ class State:
         self.state = 0
         self.when  = now()
         # You have 5 mins secs to resume a work-out
-        self.maxPause = 5*secsInOneMins
+        self.maxPause = 5*User.secsInOneMin
 
     def reset(self):
         self.state = 0
@@ -104,13 +104,18 @@ class Session():
         self.splits  = []
 
     def createSplits(self, intensity, duration, distance):
-        self.splits = [[duration, distance]]
+        self.splits = [[duration, distance, "Main Body"]]
+        # Add warm-up and cool-down
+        self.splits.insert(0, [2, None, "Warm-up"])
+        self.splits.append([3, None, "Cooldown"])
         self.state.reset()
         return True
 
     def startSplits(self):
+        print(self.splits)
         if len(self.splits) > 0:
             self.display.configureSplit(self.splits[0][0], self.splits[0][1])
+            self.display.updateStatus(self.splits[0][2])
             self.splits.pop(0)
         self.state.reset()
         return True
@@ -134,7 +139,7 @@ class Session():
         if self.display.updateSpeed(speed):
             # Move to the next split
             if len(self.splits) > 0:
-                self.startSplits;
+                self.startSplits()
             else:
                 self.abort()
                 

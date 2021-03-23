@@ -30,7 +30,10 @@ screenSize = {'X': 1680, 'Y': 1100}
 import socket
 
 def defineUser():
+    global secsInOneMin, metersInOneKm, screenSize
+
     machine = socket.gethostname()
     if machine == "Janicks-MacBook-Air.local":
-        screenSize = {'X': 1440, 'Y': 900}
+        screenSize = {'X': 1400, 'Y': 800}
+
     

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import User
 import Display
 import os
 
@@ -50,11 +51,10 @@ def beat():
     window.after(500, beat)
 
 
-# Wake up a sleeping screen
-os.system('xset s reset')
+User.defineUser()
 
-window = Display.MainDisplay(1100, 1680)
-window.startWorkout()
+window = Display.MainDisplay(User.screenSize['X'], User.screenSize['Y'])
+window.start()
 window.after(1000, test)
 window.after(1000, beat)
 window.mainloop()
