@@ -21,13 +21,17 @@ import json
 import os
 import platform
 import struct
+import sys
 import time
 import uuid
 
+import User
 import Workout
 import Display
 
 import aiotkinter
+
+
 
 
 #
@@ -347,10 +351,20 @@ async def runRower(rower):
 #       See if we can get Alexa to say something
 # 
 
+
+User.defineUser()
+
+for arg in sys.argv:
+    if arg == "-d":
+        User.secsInOneMin  = 1
+        User.metersInOneKm = 10
+
+        
 # Wake up a sleeping screen
 os.system('xset s reset')
 
-window = Display.MainDisplay(1100, 1680)
+
+window = Display.MainDisplay(User.screenSize['X'], User.screenSize['Y'])
 workoutSession = Workout.Session(window)
 
 shadowIoT = MyMQTTClient(window, workoutSession)
@@ -369,7 +383,7 @@ while True:
             window.updateStatus("Waiting for workout request...")
             window.update()
         # Turn off the screen if we've been waiting for a while
-        if now() - startedWaiting > 30:  #10 * 60:
+        if now() - startedWaiting > 10 * User.secsInOneMin:
             # Put the screen to sleep
             # Needs 'hdmi_blanking=1' in /boot/config.txt
             os.system('xset dpms force off')

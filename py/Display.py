@@ -17,6 +17,7 @@
 import tkinter as tk
 import time
 
+import User
 
 def now():
     return int(time.time())
@@ -55,7 +56,7 @@ class NumbersFrame(tk.Frame):
 
 class MainDisplay(tk.Tk):
 
-    def __init__(self, height, width):
+    def __init__(self, width, height):
         super().__init__()
         geo = str(width) + "x" + str(height)
         self.geometry(geo)
@@ -102,11 +103,11 @@ class MainDisplay(tk.Tk):
         if self.durationGoal == None:
             self.Numbers.TimeLabel.configure(text="Time:")
         else:
-            self.durationGoal *= 60
+            self.durationGoal *= User.secsInOneMin
             self.Numbers.TimeLabel.configure(text="Left:")
             self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
             
-        self.distanceGoal = distance
+        self.distanceGoal = distance * User.metersInOneKm / 1000
         if self.distanceGoal == None:
             self.Numbers.DistanceLabel.configure(text="Dist:")
         else:

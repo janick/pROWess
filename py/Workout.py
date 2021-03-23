@@ -16,6 +16,8 @@
 
 import time
 
+import User
+
 
 def now():
     return int(time.time())
@@ -35,7 +37,7 @@ class State:
         self.state = 0
         self.when  = now()
         # You have 5 mins secs to resume a work-out
-        self.maxPause = 5*60
+        self.maxPause = 5*secsInOneMins
 
     def reset(self):
         self.state = 0
