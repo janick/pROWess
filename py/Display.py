@@ -75,9 +75,6 @@ class Plotter(tk.Frame):
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         
-        toolbar = NavigationToolbar2Tk(canvas, self)
-        toolbar.update()
-        
 
 class MainDisplay(tk.Tk):
 
