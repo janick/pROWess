@@ -51,11 +51,11 @@ def beat():
     window.after(500, beat)
 
 
-# Wake up a sleeping screen
-os.system('xset s reset')
+User.defineUser()
 
 window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
 window.configureSplit(30, None)
+window.start()
 window.after(1000, test)
 window.after(1000, beat)
 window.mainloop()

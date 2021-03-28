@@ -128,7 +128,7 @@ class MainDisplay(tk.Tk):
             self.durationGoal *= User.secsInOneMin
             self.Numbers.TimeLabel.configure(text="Left:")
             self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
-            
+
         if self.distanceGoal == None:
             self.Numbers.DistanceLabel.configure(text="Dist:")
         else:
