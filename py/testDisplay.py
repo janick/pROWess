@@ -16,6 +16,7 @@
 
 import Display
 import os
+import User
 
 #
 # Test the display layout
@@ -53,8 +54,8 @@ def beat():
 # Wake up a sleeping screen
 os.system('xset s reset')
 
-window = Display.MainDisplay(1100, 1680)
-window.startWorkout()
+window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
+window.configureSplit(30, None)
 window.after(1000, test)
 window.after(1000, beat)
 window.mainloop()

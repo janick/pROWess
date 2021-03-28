@@ -24,7 +24,7 @@ secsInOneMin  = 60
 metersInOneKm = 1000
 
 # Size of the display windoe
-screenSize = {'X': 1680, 'Y': 1100}
+screen = {'X': 1680, 'Y': 1050, 'DPI': 90}
 
 
 import socket
@@ -32,5 +32,5 @@ import socket
 def defineUser():
     machine = socket.gethostname()
     if machine == "Janicks-MacBook-Air.local":
-        screenSize = {'X': 1440, 'Y': 900}
+        screen = {'X': 1440, 'Y': 900, 'DPI': 96}
     

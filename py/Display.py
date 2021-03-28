@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
 import tkinter as tk
 import time
 
@@ -29,15 +32,18 @@ class NumbersFrame(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, kwargs)
 
-        self.WorkoutTime = tk.Label(master=self, text="--:--", font=('Arial', 40), width=7)
-        self.StrokeRate  = tk.Label(master=self, text="--", font=('Arial bold', 50), width=3)
-        self.SplitTime   = tk.Label(master=self, text=" -:--", font=('Arial bold', 50), width=7)
+        self.grid_propagate(0)
+        self.pack_propagate(0)
+
+        self.WorkoutTime = tk.Label(master=self, text="--:--", font=('Arial', 40), width=5)
+        self.StrokeRate  = tk.Label(master=self, text="--", font=('Arial bold', 50), width=2)
+        self.SplitTime   = tk.Label(master=self, text=" -:--", font=('Arial bold', 50), width=5)
         self.Distance    = tk.Label(master=self, text="---- m", font=('Arial', 40), width=7)
         self.HeartRate   = tk.Label(master=self, text="---", font=('Arial bold', 60), fg='red', width=3)
         self.Status      = tk.Label(master=self, text="Disconnected", font=('Arial', 20))
 
 
-        self.TimeLabel = tk.Label(master=self, text="Time:", anchor="e", font=('Arial', 25), width=6)
+        self.TimeLabel = tk.Label(master=self, text="Time:", anchor="e", font=('Arial', 25), width=5)
         self.TimeLabel.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
         self.WorkoutTime.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
         self.StrokeRate.grid( row=0, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
@@ -53,6 +59,25 @@ class NumbersFrame(tk.Frame):
         self.Heart.grid(row=2, column=3, sticky=tk.N+tk.S+tk.E+tk.W)
         self.Status.grid(row=3, column=0, columnspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
 
+
+class Plotter(tk.Frame):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, kwargs)
+
+        xInch = kwargs['width']/User.screen['DPI']
+        yInch = kwargs['height']/User.screen['DPI']
+        self.figure = Figure(figsize=(xInch, yInch), dpi=User.screen['DPI'])
+        fig = Figure(figsize=(5, 4), dpi=100)
+        t = [1, 2, 3, 4, 5, 6]
+        fig.add_subplot(111).plot(t, t)
+        
+        canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        
+        toolbar = NavigationToolbar2Tk(canvas, self)
+        toolbar.update()
+        
 
 class MainDisplay(tk.Tk):
 
@@ -72,9 +97,9 @@ class MainDisplay(tk.Tk):
         self.update()
 
         # Bottom half layout
-        bottomLeftFrame   = tk.Frame(master=bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
-        bottomMiddleFrame = tk.Frame(master=bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
-        bottomRightFrame  = NumbersFrame(bottomHalfFrame, borderwidth=1, relief=tk.GROOVE)
+        bottomLeftFrame   = Plotter(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
+        bottomMiddleFrame = Plotter(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
+        bottomRightFrame  = NumbersFrame(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
         bottomHalfFrame.rowconfigure(0, weight=1)
         bottomHalfFrame.columnconfigure(0, weight=1)
         bottomHalfFrame.columnconfigure(1, weight=1)
@@ -107,10 +132,10 @@ class MainDisplay(tk.Tk):
             self.Numbers.TimeLabel.configure(text="Left:")
             self.Numbers.WorkoutTime.configure(text=MMSS(self.durationGoal))
             
-        self.distanceGoal = distance * User.metersInOneKm / 1000
         if self.distanceGoal == None:
             self.Numbers.DistanceLabel.configure(text="Dist:")
         else:
+            self.distanceGoal = distance * User.metersInOneKm / 1000
             self.Numbers.DistanceLabel.configure(text="Left:")
             self.Numbers.Distance.configure(text="{:4d} m".format(int(self.distanceGoal)))
     

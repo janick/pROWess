@@ -364,7 +364,7 @@ for arg in sys.argv:
 os.system('xset s reset')
 
 
-window = Display.MainDisplay(User.screenSize['X'], User.screenSize['Y'])
+window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
 workoutSession = Workout.Session(window)
 
 shadowIoT = MyMQTTClient(window, workoutSession)

@@ -94,8 +94,9 @@ The async patterns must be strictly followed.
 * Python 3.6 or later (required by Bleak)
 * Bleak
 * aiotkinter
-* x11-server-utils ('xset' command to wake up sleeping screen)
 * AWSIoTPythonSDK
+* matplotlib
+* x11-server-utils ('xset' command to wake up sleeping screen)
 
 
 ### References
