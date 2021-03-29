@@ -104,21 +104,21 @@ class Session():
         self.splits  = []
 
     def createSplits(self, intensity, duration, distance):
-        self.splits = [[duration, distance, "Main Body"], true]
+        self.splits = [[duration, distance, "Main Body", True]]
         # Add warm-up and cool-down
-        self.splits.insert(0, [2, None, "Warm-up"], true)
-        self.splits.append([3, None, "Cooldown"], true)
+        self.splits.insert(0, [2, None, "Warm-up", True])
+        self.splits.append([3, None, "Cooldown", True])
         self.state.reset()
         return True
 
     def startSplits(self):
         if len(self.splits) > 0:
             # If we are starting a new workout section, compute the overall length of the multi-splits
-            if self.splits[0][2]:
+            if self.splits[0][3]:
                 durationGoal = self.splits[0][0]
                 distanceGoal = self.splits[0][1]
-                for i in range(1..len(splits)):
-                    if self.splits[i][2]:
+                for i in range(1,len(self.splits)):
+                    if self.splits[i][3]:
                         break
                     durationGoal += self.splits[i][0]
                     distanceGoal += self.splits[i][1]
