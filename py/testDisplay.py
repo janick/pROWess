@@ -54,6 +54,7 @@ def beat():
 User.defineUser()
 
 window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
+window.configureEndGoal(1, None)
 window.configureSplit(30, None)
 window.start()
 window.after(1000, test)
