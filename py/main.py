@@ -114,7 +114,7 @@ class MyMQTTClient:
         if self.shadowState['intensity'] == "Idle":
             if nextState in ["Easy", "Normal", "Intense", "Interval", "Cardio", "Strength", "Scheduled"]:
                 
-                if self.workout.createSplits(nextState, self.shadowState['duration'], self.shadowState['distance']):
+                if self.workout.createPhases(nextState, self.shadowState['duration'], self.shadowState['distance']):
                     self.shadowState['intensity'] = nextState
                     return True
                 return False
@@ -215,7 +215,11 @@ def updateRowingStatus1(charHandle, val):
         speed = 0
     lastElapsedTime = elapsedTime
 
-    workoutSession.update(speed, strokeRate, heartBeat)
+    newPhase = workoutSession.update(speed, strokeRate, heartBeat)
+    if newPhase is None:
+        return;
+
+    #asyncio.create_task(newProgram(Phase))
 
 
 PM5UUID = {'getSerial'  : uuid.UUID('{ce060012-43e5-11e4-916c-0800200c9a66}'),
@@ -257,7 +261,7 @@ def frameCSAFE(cmdBytes):
 #       [cmdId, [rsp ... rsp ]]]
 #
 def unframeCSAFE(rspBytes):
-    # print("CSAFE RSP: [" + ", ".join(hex(n) for n in rspBytes) + "]")
+    print("CSAFE RSP: [" + ", ".join(hex(n) for n in rspBytes) + "]")
     if rspBytes[0] != 0xF1:
         return None
     rsp = [rspBytes[1]]   # Status
@@ -289,11 +293,25 @@ async def findRower():
     return None
 
 
+async def programPhase(client, phase):
+    tsplit = phase['duration'] + phase['restTime'];
+    twork  = tsplit * phase['repeat'];
+    tsplit = int(tsplit * 0.01).to_bytes(4, 'little')
+    await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x87,                                                   # GOREADY
+                                                                   0x20, 0x03, 0x00, int(twork), (twork * 60) % 60,        # SETTWORK
+                                                                   0x1A, 0x07, 0x05, 0x05, 0x00, tsplit[0], tsplit[1], tsplit[2], tsplit[3],   # SETUSRCFG1 / PM_SET_SPLITDURATION
+                                                                   0x24, 0x02, 0x00, 0x00,                                 # SETPROGRAM
+                                                                   0x85]), True)                                           # GOINUSE
 async def runRower(rower):
     async with BleakClient(rower) as client:
         val = await client.read_gatt_char(PM5UUID['getSerial'])
         print("Connected to PM5 Serial no " + val.decode())
 
+        newPhase = asyncio.get_running_loop().create_future();
+        
+        # Go ready
+        await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x87]), True)
+        
         charHandlerByHandle = {}
         
         # charHandlerByHandle[client.services.get_characteristic(PM5UUID['getCSAFE'  ]).handle] = decodeCSAFE
@@ -305,15 +323,24 @@ async def runRower(rower):
         for charHandle in charHandlerByHandle.keys():
             await client.start_notify(charHandle, charHandlerByHandle[charHandle])
             
+        nextPhase = workoutSession.startNextPhase()
+        if nextPhase != None:
+            await programPhase(client, nextPhase);
+
         window.updateStatus("Start rowing!")
         window.update()
 
-        # Get the serial No via CSAFE
-        # await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x94]), True)
-        while not workoutSession.state.isEnded():
-            await asyncio.sleep(1)
-
+        workoutSession.setFuture(newPhase);
         
+        while not workoutSession.state.isEnded():
+            await newPhase;
+        
+            if newPhase.result() != None:
+                await programPhase(client, newPhase);
+
+        # Go Idle
+        await client.write_gatt_char(PM5UUID['sendCSAFE'], frameCSAFE([0x82]), True)
+
         window.updateStatus("Disconnecting...")
         window.update()
         await asyncio.sleep(1)
@@ -328,7 +355,7 @@ async def runRower(rower):
 #
 # Alexa, ask MyRower to start an [easy|intense] [n] meters|minutes workout"
 #       -> Turn on screen and connects to PM5
-#       -> Generate splits, start session
+#       -> Generate phases, start session
 #       "Your workout will start when you start rowing"
 #
 # "Alexa, open MyRower"
@@ -336,7 +363,7 @@ async def runRower(rower):
 #       "What kind of workout would you like?"
 #
 #    "Start an [easy|intense] [n] meters|minutes workout"
-#       -> Generate splits, start session
+#       -> Generate phases, start session
 #       "Your workout will start when you start rowing"
 #
 #    "Alexa, tell MyRower to stop my workout"
@@ -365,6 +392,8 @@ for arg in sys.argv:
         testMode = 'Distance'
     if arg == "-T":
         testMode = 'Free'
+    if arg == "-Tp":
+        testMode = 'Program'
 
         
 # Wake up a sleeping screen
@@ -374,28 +403,29 @@ os.system('xset s reset')
 window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
 workoutSession = Workout.Session(window)
 
-if testMode != None:
+if testMode != None and testMode != "Program":
     if testMode == "Time":
-        workoutSession.createSplits("Normal", 30, None)
+        workoutSession.createPhases("Normal", 30, None)
     if testMode == "Distance":
-        workoutSession.createSplits("Normal", None, 5000)
-        interval = 0.5
-        for i in range(10):
-            time.sleep(interval)
-            workoutSession.update(0, 0, 78)
-        for i in range(20):
-            time.sleep(interval)
-            workoutSession.update(2, 20, 90)
-        for i in range(6):
-            time.sleep(interval)
-            workoutSession.update(0, 0, 85)
-        for i in range(20):
-            time.sleep(interval)
-            workoutSession.update(2, 20, 90)
-        for i in range(20):
-            time.sleep(interval)
-            workoutSession.update(0, 0, 80)
-        time.sleep(20)
+        workoutSession.createPhases("Normal", None, 5000)
+        
+    interval = 0.5
+    for i in range(10):
+        time.sleep(interval)
+        workoutSession.update(0, 0, 10)
+    for i in range(20):
+        time.sleep(interval)
+        workoutSession.update(2, 20, 20)
+    for i in range(6):
+        time.sleep(interval)
+        workoutSession.update(0, 0, 30)
+    for i in range(20):
+        time.sleep(interval)
+        workoutSession.update(2, 20, 40)
+    for i in range(20):
+        time.sleep(interval)
+        workoutSession.update(0, 0, 50)
+    time.sleep(20)
     exit(0)
 
 shadowIoT = MyMQTTClient(window, workoutSession)
@@ -407,18 +437,21 @@ while True:
     window.updateStatus("Waiting for workout request...")
     window.update()
 
-    startedWaiting = now()
-    while shadowIoT.isIdle():
-        # Refresh the message every minute
-        if (now() - startedWaiting) % 60 == 0:
-            window.updateStatus("Waiting for workout request...")
-            window.update()
-        # Turn off the screen if we've been waiting for a while
-        if now() - startedWaiting > 10 * User.secsInOneMin:
-            # Put the screen to sleep
-            # Needs 'hdmi_blanking=1' in /boot/config.txt
-            os.system('xset dpms force off')
-        time.sleep(1)
+    if testMode == "Program":
+        workoutSession.createPhases("TestProgram", 30, None)
+    else:
+        startedWaiting = now()
+        while shadowIoT.isIdle():
+            # Refresh the message every minute
+            if (now() - startedWaiting) % 60 == 0:
+                window.updateStatus("Waiting for workout request...")
+                window.update()
+            # Turn off the screen if we've been waiting for a while
+            if now() - startedWaiting > 10 * User.secsInOneMin:
+                # Put the screen to sleep
+                # Needs 'hdmi_blanking=1' in /boot/config.txt
+                os.system('xset dpms force off')
+                time.sleep(1)
         
     # Wake up a sleeping screen
     os.system('xset s reset')
@@ -436,8 +469,6 @@ while True:
     window.updateStatus("Connected", 'green')
     window.update()
 
-    workoutSession.startSplits()
-    
     loop.run_until_complete(runRower(rower))
     shadowIoT.gotoIdle()
     

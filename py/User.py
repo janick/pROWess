@@ -26,11 +26,13 @@ metersInOneKm = 1000
 # Size of the display windoe
 screen = {'X': 1680, 'Y': 1050, 'DPI': 90}
 
+# Average 500m split time, in seconds, to estimate reset time during distance intervals
+splitTime = 2*60+30
 
 import socket
 
 def defineUser():
-    global secsInOneMin, metersInOneKm, screenSize
+    global secsInOneMin, metersInOneKm, screen
 
     machine = socket.gethostname()
     if machine == "Janicks-MacBook-Air.local":

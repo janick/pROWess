@@ -102,4 +102,5 @@ The async patterns must be strictly followed.
 ### References
 * [Bleak Github](https://github.com/hbldh/bleak)
 * [PM5 BLE Services](https://www.concept2.co.uk/files/pdf/us/monitors/PM5_BluetoothSmartInterfaceDefinition.pdf)    
-* [Concept2 SDK (CSAFE spec)](https://www.concept2.com/service/software/software-development-kit)
+* [Original CSAFE spec](https://web.archive.org/web/20060712183400/http://www.fitlinxx.com/csafe/Commands.htm)
+* [Concept2 CSAFE spec extensions](https://www.concept2.co.uk/files/pdf/us/monitors/PM5_BluetoothSmartInterfaceDefinition.pdf)

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import asyncio
 import time
 
 import User
@@ -98,38 +99,78 @@ class State:
 class Session():
 
     def __init__(self, display):
-        self.display = display
-        self.splits  = None
-        self.state   = State()
-        self.splits  = []
+        self.display  = display
+        self.phases   = []
+        self.state    = State()
+        self.newPhase = None
 
-    def createSplits(self, intensity, duration, distance):
-        self.splits = [[duration, distance, "Main Body", True]]
-        # Add warm-up and cool-down
-        self.splits.insert(0, [2, None, "Warm-up", True])
-        self.splits.append([3, None, "Cooldown", True])
+
+    def setFuture(self, newPhase):
+        self.newPhase = newPhase
+        
+
+    # A workout is composed of a series of phases. Each phase ends up being programmed (and run) as a separate
+    # workout in the PM-5. Warm-up and cool-down phases are automatically added.
+    def createPhases(self, intensity, duration, distance):
+        if intensity == "TestProgram":
+
+            self.phases = [{'name':     "Test Warm-up",
+                            'duration': 0.50,
+                            'restTime': 0,
+                            'repeat':   1},
+                           {'name':     "Test Program",
+                            'duration': 0.50,
+                            'restTime': 0.25,
+                            'repeat':   3},
+                           {'name':     "Test Cool-down",
+                            'duration': 0.50,
+                            'restTime': 0,
+                            'repeat':   0}]
+            
+        else:
+            if duration is None:
+                self.phases = [{'name':     "Timed " + intensity,
+                                'duration': duration,
+                                'restTime': 0,
+                                'repeat':   1}]
+            else:
+                self.phases = [{'name':     intensity + " Distance",
+                                'distance': distance,
+                                'restTime': 0,
+                                'repeat':   1}]
+
+            # Add warm-up and cool-down
+            self.phases.insert(0, {'name':     "Warm-up",
+                                   'duration': 2,
+                                   'restTime': 0,
+                                   'repeat':   1})
+
+            self.phases.append({'name':     "Cool-down",
+                                'duration': 2,
+                                'restTime': 0,
+                                'repeat':   1})
         self.state.reset()
         return True
 
-    def startSplits(self):
-        if len(self.splits) > 0:
-            # If we are starting a new workout section, compute the overall length of the multi-splits
-            if self.splits[0][3]:
-                durationGoal = self.splits[0][0]
-                distanceGoal = self.splits[0][1]
-                for i in range(1,len(self.splits)):
-                    if self.splits[i][3]:
-                        break
-                    durationGoal += self.splits[i][0]
-                    distanceGoal += self.splits[i][1]
-                self.display.configureEndGoal(durationGoal, distanceGoal)
-            self.display.configureSplit(self.splits[0][0], self.splits[0][1])
-            self.display.updateStatus(self.splits[0][2])
-            self.splits.pop(0)
+    def startNextPhase(self):
+        if len(self.phases) <= 0:
+            return None
+        
+        phase = self.phases.pop(0)
+        if 'duration' in phase:
+            self.display.configureEndGoal((phase['duration'] + phase['restTime']) * phase['repeat'], None);
+            self.display.configurePhase((phase['duration'] + phase['restTime']) * phase['repeat'], None)
+        else: 
+            self.display.configureEndGoal(None, phase['distance'] * phase['repeat']);
+            self.display.configurePhase(None, phase['distance'])
+            
+        self.display.updateStatus(phase['name'])
         self.state.reset()
-        return True
+        return phase
 
     def update(self, speed, strokeRate, heartRate):
+        rc = None
+        
         self.display.heartBeat()
 
         stateChange = self.state.update(speed)
@@ -147,8 +188,10 @@ class Session():
         self.display.updateStrokeRate(strokeRate)
         if self.display.updateSpeed(speed):
             # Move to the next split
-            if len(self.splits) > 0:
-                self.startSplits()
+            if len(self.phases) > 0:
+                # Return the new program to send to the PM-5
+                rc = self.phases[0]
+                self.startNextPhase()
             else:
                 self.abort()
                 
@@ -160,6 +203,8 @@ class Session():
                 self.display.updateStatus("PAUSED {:d}:{:02d}...".format(int(countDown/60), countDown % 60), 'red')
 
         self.display.update()
+        return rc
 
     def abort(self):
+        self.newPhase.set_result(None)
         self.state.abort()

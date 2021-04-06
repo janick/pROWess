@@ -183,9 +183,9 @@ class MainDisplay(tk.Tk):
             
         
     #
-    # Configure the next split
+    # Configure the next phase
     #
-    def configureSplit(self, duration, distance):
+    def configurePhase(self, duration, distance):
         self.durationGoal = duration
         if self.durationGoal == None:
             self.numbers.TimeLabel.configure(text="Time:")
@@ -263,7 +263,7 @@ class MainDisplay(tk.Tk):
         if self.startTime is None:
             self.start(nowT)
 
-        splitDone = False;
+        phaseDone = False;
         
         duration = nowT - self.startTime
         self.durationAccum += nowT - self.lastTime
@@ -275,7 +275,7 @@ class MainDisplay(tk.Tk):
                 left = 0
             self.numbers.WorkoutTime.configure(text=MMSS(left))
             if left == 0:
-                splitDone = True
+                phaseDone = True
             if self.durationEndGoal != None and self.durationAccum <= self.durationEndGoal:
                 self.progress.updatePercent(int(self.durationAccum * 100 / self.durationEndGoal))
 
@@ -292,13 +292,13 @@ class MainDisplay(tk.Tk):
                 left = 0
             self.numbers.Distance.configure(text="{:4d} m".format(int(left)))
             if left == 0:
-                splitDone = True
+                phaseDone = True
             if self.distanceEndGoal != None and self.distanceAccum <= self.distanceEndGoal:
                 self.progress.updatePercent(int(self.distanceAccum * 100 / self.distanceEndGoal))
 
         self.lastTime = nowT
 
-        return splitDone
+        return phaseDone
         
         
     def updateStrokeRate(self, strokesPerMin):
