@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
-                                               NavigationToolbar2Tk)
+
 import tkinter as tk
 import tkinter.ttk
 import time
@@ -61,44 +59,32 @@ class NumbersFrame(tk.Frame):
         self.Status.grid(row=3, column=0, columnspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
 
 
-class Plotter(tk.Frame):
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, kwargs)
-
-        xInch = kwargs['width']/User.screen['DPI']
-        yInch = kwargs['height']/User.screen['DPI']
-        self.figure = Figure(figsize=(xInch, yInch), dpi=User.screen['DPI'])
-        fig = Figure(figsize=(5, 4), dpi=100)
-        t = [1, 2, 3, 4, 5, 6]
-        fig.add_subplot(111).plot(t, t)
-        
-        canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        
-
 class Progress(tk.Frame):
-    def __init__(self, parent, **kwargs):
+    def __init__(self, name, parent, **kwargs):
         super().__init__(parent, kwargs)
 
-        self.label = tk.ttk.Style(self)
-        self.label.configure("LabeledProgressbar", font=('Arial bold', 14), foreground='black')
-        self.label.layout("LabeledProgressbar",
-                          [('LabeledProgressbar.trough',
-                            {'children': [('LabeledProgressbar.pbar', {'side': 'left', 'sticky': 'ns'}),
-                                          ("LabeledProgressbar.label", {"sticky": ""})],
-                             'sticky': 'nswe'})])
+        self.name = "ProgressBar" + name
+        self.style = tk.ttk.Style(self)
+        self.style.configure(self.name, font=('Arial bold', 14), foreground='black')
+        self.style.configure(self.name, background='#5ca3e0', foreground='#031e36')
+        self.style.layout(self.name,
+                          [(self.name + '.trough',
+                            {'children': [(self.name + '.pbar', {'side': 'left', 'sticky': 'nsew'}),
+                                          (self.name + '.label', {'sticky': ''})],
+                             'sticky': 'nsew'})])
 
-        self.bar = tk.ttk.Progressbar(self, orient=tk.HORIZONTAL, length=kwargs['width']-16, mode='determinate', style="LabeledProgressbar")
-        self.label.configure("LabeledProgressbar", background='#5ca3e0', foreground='#031e36')
-        self.bar.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W)
-        self.updatePercent(0)
+        self.bar = tk.ttk.Progressbar(self, orient=tk.HORIZONTAL, mode='determinate', style=self.name, length=User.screen['X']-16)
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.bar.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.updatePercent(50)
 
     def updatePercent(self, percent):
         if percent > 0:
-            self.label.configure("LabeledProgressbar", text="{0} %".format(percent))
+            self.style.configure(self.name, text="{0} %".format(percent))
         else:
-            self.label.configure("LabeledProgressbar", text="     ")
+            self.style.configure(self.name, text="     ")
         self.bar['value'] = percent
         
 
@@ -111,40 +97,72 @@ class MainDisplay(tk.Tk):
 
         # Main Layout
         self.winfo_toplevel().title("pROWess")
-        topHalfFrame    = tk.Frame(master=self, relief=tk.RIDGE, borderwidth=5, height=int((height-80)*2/3))
-        middleFrame     = tk.Frame(master=self, relief=tk.RIDGE, borderwidth=5, height=80)
-        bottomHalfFrame = tk.Frame(master=self, relief=tk.RIDGE, borderwidth=5, height=int((height-80)*1/3))
+        topFrame    = tk.Frame(master=self, relief=tk.GROOVE, borderwidth=0, height=height-200)
+        bottomFrame = tk.Frame(master=self, relief=tk.RIDGE,  borderwidth=5, height=200)
         self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
-        self.rowconfigure(2, weight=1)
-        topHalfFrame.grid(   row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-        middleFrame.grid(    row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-        bottomHalfFrame.grid(row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        topFrame.grid(   row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomFrame.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        topFrame.grid_propagate(0)
+        bottomFrame.grid_propagate(0)
+
+        # Top frame layout
+        topLeftFrame   = tk.Frame(master=topFrame, relief=tk.RIDGE,  borderwidth=5)
+        topMiddleFrame = tk.Frame(master=topFrame, relief=tk.RIDGE,  borderwidth=5)
+        topRightFrame  = tk.Frame(master=topFrame, relief=tk.RIDGE,  borderwidth=5)
+        topFrame.rowconfigure(0, weight=1)
+        topFrame.columnconfigure(0, weight=1)
+        topFrame.columnconfigure(1, weight=1)
+        topFrame.columnconfigure(2, weight=1)
+        topLeftFrame.grid(  row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        topMiddleFrame.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
+        topRightFrame.grid( row=0, column=2, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        topLeftFrame.grid_propagate(0)
+        topMiddleFrame.grid_propagate(0)
+        topRightFrame.grid_propagate(0)
+
+        # Top-right frame layout
+        topTopRightFrame    = tk.Frame(master=topRightFrame, relief=tk.GROOVE, borderwidth=5)
+        bottomTopRightFrame = NumbersFrame(topRightFrame,    relief=tk.GROOVE, borderwidth=5)
+        topRightFrame.columnconfigure(0, weight=1)
+        topRightFrame.rowconfigure(0, weight=2)
+        topRightFrame.rowconfigure(1, weight=1)
+        topTopRightFrame.grid(   row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomTopRightFrame.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        topTopRightFrame.grid_propagate(0)
+        bottomTopRightFrame.grid_propagate(0)
+
+        # Bottom frame layout
+        topBottomFrame     = tk.Frame(master=bottomFrame, relief=tk.RIDGE, borderwidth=0)
+        self.splitProgress = Progress("splitBar", bottomFrame,        relief=tk.RIDGE, borderwidth=1)
+        tickMarks          = tk.Canvas(bottomFrame, bg="red", height=20);
+        self.progress      = Progress("workoutBar", bottomFrame,        relief=tk.RIDGE, borderwidth=1)
+        bottomBottomFrame  = tk.Frame(master=bottomFrame, relief=tk.RIDGE, borderwidth=0)
+        bottomFrame.columnconfigure(0, weight=1)
+        bottomFrame.rowconfigure(0, weight=1)
+        bottomFrame.rowconfigure(1, weight=10)
+        bottomFrame.rowconfigure(2, weight=1)
+        bottomFrame.rowconfigure(3, weight=10)
+        bottomFrame.rowconfigure(4, weight=1)
+        topBottomFrame.grid(    row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.splitProgress.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        tickMarks.grid(         row=2, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.progress.grid(     row=3, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+        bottomBottomFrame.grid( row=4, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+        topBottomFrame.grid_propagate(0)
+        self.splitProgress.grid_propagate(1)
+        self.progress.grid_propagate(1)
+        bottomBottomFrame.grid_propagate(0)
+
         self.update()
-
-        middleFrame.grid_propagate(0)
-        middleFrame.pack_propagate(0)
-        bottomHalfFrame.grid_propagate(0)
-        bottomHalfFrame.pack_propagate(0)
-
-        # Middle frame layout
-        self.progress = Progress(middleFrame, width=middleFrame.winfo_width(), borderwidth=1, relief=tk.GROOVE)
-        self.progress.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-
-        # Bottom half layout
-        bottomLeftFrame   = Plotter(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
-        bottomMiddleFrame = Plotter(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
-        bottomRightFrame  = NumbersFrame(bottomHalfFrame, width=int(bottomHalfFrame.winfo_width()/3), height=bottomHalfFrame.winfo_height(), borderwidth=1, relief=tk.GROOVE)
-        bottomHalfFrame.rowconfigure(0, weight=1)
-        bottomHalfFrame.columnconfigure(0, weight=1)
-        bottomHalfFrame.columnconfigure(1, weight=1)
-        bottomLeftFrame.grid(  row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-        bottomMiddleFrame.grid(row=0, column=1, sticky=tk.N+tk.S+tk.E+tk.W)
-        bottomRightFrame.grid( row=0, column=2, sticky=tk.N+tk.S)
-        self.update()
-
+        
         # Keep reference to the frames we need to update
-        self.numbers = bottomRightFrame
+        self.numbers = bottomTopRightFrame
         self.startTime = None
         self.lastTime  = None
         self.distance  = 0

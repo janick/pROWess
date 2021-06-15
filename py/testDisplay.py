@@ -31,15 +31,19 @@ data = [[21, 2570, 72],
         [1, 2570, 128],
         [21, 2570, 72]]
 
+progress = 10;
 
 def test():
     global window
+    global progress
     if len(data) == 0:
         return
 
     window.updateStrokeRate(data[0][0])
     window.updateSpeed(data[0][1]/1000)
     window.updateHeartBeat(data[0][2])
+    window.progress.updatePercent(progress)
+    progress = progress + 10;
 
     data.pop(0)
     window.after(1000, test)
@@ -55,7 +59,7 @@ User.defineUser()
 
 window = Display.MainDisplay(User.screen['X'], User.screen['Y'])
 window.configureEndGoal(1, None)
-window.configureSplit(30, None)
+#window.configureSplit(30, None)
 window.start()
 window.after(1000, test)
 window.after(1000, beat)
